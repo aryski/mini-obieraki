@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <base href="$FLUTTER_BASE_HREF">
+  <meta charset="UTF-8">
+  <meta content="IE=Edge" http-equiv="X-UA-Compatible">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="MiNI Obieraki – oceniaj i przeglądaj przedmioty obieralne na Wydziale Matematyki i Nauk Informacyjnych PW.">
+  <meta name="theme-color" content="#1A56DB">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="MiNI Obieraki">
+  <link rel="apple-touch-icon" href="icons/Icon-192.png">
+  <link rel="icon" type="image/png" href="favicon.png"/>
+  <title>MiNI Obieraki</title>
+  <link rel="manifest" href="manifest.json">
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      background: #F8F9FF;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    }
+    #loading {
+      position: fixed;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: #F8F9FF;
+      gap: 16px;
+      z-index: 999;
+    }
+    #loading h1 {
+      font-size: 22px;
+      font-weight: 600;
+      color: #1A56DB;
+      margin: 0;
+      letter-spacing: -0.5px;
+    }
+    #loading p {
+      color: #6B7280;
+      margin: 0;
+      font-size: 14px;
+    }
+    #loading-bar {
+      width: 200px;
+      height: 3px;
+      background: #E5E7EB;
+      border-radius: 2px;
+      overflow: hidden;
+    }
+    #loading-bar::after {
+      content: '';
+      display: block;
+      height: 100%;
+      background: #1A56DB;
+      border-radius: 2px;
+      animation: load 1.8s ease-in-out infinite;
+    }
+    @keyframes load {
+      0% { transform: translateX(-100%); }
+      100% { transform: translateX(400%); }
+    }
+  </style>
+</head>
+<body>
+  <div id="loading">
+    <h1>MiNI Obieraki</h1>
+    <div id="loading-bar"></div>
+    <p>Ładowanie…</p>
+  </div>
+  <script>
+    window.addEventListener('flutter-first-frame', function() {
+      document.getElementById('loading').style.display = 'none';
+    });
+  </script>
+  <script src="flutter_bootstrap.js" async></script>
+</body>
+</html>
