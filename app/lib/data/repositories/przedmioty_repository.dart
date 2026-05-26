@@ -244,6 +244,11 @@ class PrzedmiotyRepository {
       liczbaOpinii: 0,
     );
     _mockList.add(newPrzedmiot);
+    _mockDetails[newPrzedmiot.id] = PrzedmiotSzczegoly(
+      przedmiot: newPrzedmiot,
+      rozkladOcen: {},
+      opinie: [],
+    );
     return newPrzedmiot;
   }
 
