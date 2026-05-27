@@ -4,6 +4,7 @@ import 'package:flutter_rating_bar/flutter_rating_bar.dart';
 import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mini_obieraki/core/theme/app_theme.dart';
+import 'package:mini_obieraki/data/models/opinia.dart';
 import 'package:mini_obieraki/features/opinie/cubit/dodaj_opinie_cubit.dart';
 import 'package:mini_obieraki/features/opinie/cubit/dodaj_opinie_state.dart';
 import 'package:mini_obieraki/shared/widgets/content_wrapper.dart';
@@ -20,6 +21,7 @@ class DodajOpiniePage extends StatefulWidget {
 class _DodajOpiniePageState extends State<DodajOpiniePage> {
   final _trescController = TextEditingController();
   int _ocena = 4;
+  PoziomTrudnosci _trudnosc = PoziomTrudnosci.sredni;
   static const int _maxChars = 1000;
   static const int _minChars = 10;
 
@@ -59,6 +61,8 @@ class _DodajOpiniePageState extends State<DodajOpiniePage> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   _buildRatingSection(theme, isLoading),
+                  const Gap(24),
+                  _buildTrudnoscSection(theme, isLoading),
                   const Gap(24),
                   _buildTrescSection(theme, isLoading),
                   if (state is DodajOpinieFailure) ...[
@@ -119,6 +123,82 @@ class _DodajOpiniePageState extends State<DodajOpiniePage> {
     );
   }
 
+  static Color _trudnoscColor(PoziomTrudnosci p) => switch (p) {
+        PoziomTrudnosci.latwy => AppTheme.successColor,
+        PoziomTrudnosci.sredni => AppTheme.ratingColor,
+        PoziomTrudnosci.trudny => AppTheme.errorColor,
+      };
+
+  Widget _buildTrudnoscSection(ThemeData theme, bool disabled) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Poziom trudności',
+          style: theme.textTheme.titleSmall?.copyWith(
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        const Gap(12),
+        Row(
+          children: [
+            for (final p in PoziomTrudnosci.values) ...[
+              if (p != PoziomTrudnosci.values.first) const Gap(8),
+              Expanded(child: _trudnoscOption(theme, p, disabled)),
+            ],
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _trudnoscOption(ThemeData theme, PoziomTrudnosci p, bool disabled) {
+    final selected = _trudnosc == p;
+    final color = _trudnoscColor(p);
+
+    return GestureDetector(
+      onTap: disabled ? null : () => setState(() => _trudnosc = p),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 150),
+        curve: Curves.easeOut,
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        decoration: BoxDecoration(
+          color: selected
+              ? color.withValues(alpha: 0.12)
+              : theme.colorScheme.surfaceContainerLowest,
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(
+            color: selected
+                ? color.withValues(alpha: 0.6)
+                : theme.colorScheme.outlineVariant,
+            width: selected ? 1.5 : 1,
+          ),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              width: 8,
+              height: 8,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: selected ? color : theme.colorScheme.outline,
+              ),
+            ),
+            const Gap(8),
+            Text(
+              p.label,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: selected ? color : theme.colorScheme.onSurfaceVariant,
+                fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildTrescSection(ThemeData theme, bool disabled) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -154,7 +234,7 @@ class _DodajOpiniePageState extends State<DodajOpiniePage> {
           enabled: !disabled,
           decoration: const InputDecoration(
             hintText:
-                'Co myślisz o tym przedmiocie? Jak były zajęcia, prowadzący, zaliczenie?',
+                'Co myślisz o tym przedmiocie? Jak wyglądały zajęcia, materiały, zaliczenie?',
           ),
           maxLines: 6,
           minLines: 4,
@@ -164,7 +244,8 @@ class _DodajOpiniePageState extends State<DodajOpiniePage> {
         ),
         const Gap(6),
         Text(
-          'Minimum $_minChars znaków. Twoja opinia może zostać zredagowana przez moderatora AI.',
+          'Oceniaj zajęcia, nie osobę prowadzącego. Minimum $_minChars znaków. '
+          'Twoja opinia może zostać zredagowana przez moderatora AI.',
           style: theme.textTheme.bodySmall?.copyWith(
             color: theme.colorScheme.onSurfaceVariant,
           ),
@@ -183,6 +264,7 @@ class _DodajOpiniePageState extends State<DodajOpiniePage> {
             : () {
                 context.read<DodajOpinieCubit>().submit(
                       ocena: _ocena,
+                      trudnosc: _trudnosc,
                       tresc: _trescController.text,
                     );
               },

@@ -10,6 +10,7 @@ class OpinieRepository {
   Future<String> addOpinia({
     required String przedmiotId,
     required int ocena,
+    required PoziomTrudnosci trudnosc,
     required String tresc,
   }) async {
     await Future.delayed(const Duration(milliseconds: 900));
@@ -18,6 +19,7 @@ class OpinieRepository {
     _pending[id] = Opinia(
       id: id,
       ocena: ocena,
+      trudnosc: trudnosc,
       tresc: tresc,
       status: StatusOpinii.oczekuje,
     );
@@ -27,6 +29,7 @@ class OpinieRepository {
       _pending[id] = Opinia(
         id: id,
         ocena: ocena,
+        trudnosc: trudnosc,
         tresc: tresc,
         status: StatusOpinii.opublikowana,
         dataOpublikowania: DateTime.now(),
@@ -43,6 +46,7 @@ class OpinieRepository {
     return Opinia(
       id: identifier,
       ocena: 4,
+      trudnosc: PoziomTrudnosci.sredni,
       tresc: 'Przykładowa opinia.',
       status: StatusOpinii.opublikowana,
       dataOpublikowania: DateTime.now().subtract(const Duration(days: 1)),

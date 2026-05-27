@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+import 'package:mini_obieraki/core/constants/app_constants.dart';
 import 'package:mini_obieraki/data/models/opinia.dart';
 
 class Przedmiot extends Equatable {
@@ -6,9 +7,11 @@ class Przedmiot extends Equatable {
   final String nazwa;
   final String kod;
   final String? prowadzacy;
-  final int? semestr;
-  final String? opis;
+  final double? ects;
   final double srednia;
+
+  /// Średnia trudność (1–3) z opinii opublikowanych; `null` gdy brak opinii.
+  final double? sredniaTrudnosc;
   final int liczbaOpinii;
 
   const Przedmiot({
@@ -16,9 +19,9 @@ class Przedmiot extends Equatable {
     required this.nazwa,
     required this.kod,
     this.prowadzacy,
-    this.semestr,
-    this.opis,
+    this.ects,
     required this.srednia,
+    this.sredniaTrudnosc,
     required this.liczbaOpinii,
   });
 
@@ -27,15 +30,30 @@ class Przedmiot extends Equatable {
         nazwa: json['nazwa'] as String,
         kod: json['kod'] as String,
         prowadzacy: json['prowadzacy'] as String?,
-        semestr: json['semestr'] as int?,
-        opis: json['opis'] as String?,
+        ects: (json['ects'] as num?)?.toDouble(),
         srednia: (json['srednia'] as num).toDouble(),
+        sredniaTrudnosc: (json['srednia_trudnosc'] as num?)?.toDouble(),
         liczbaOpinii: json['liczba_opinii'] as int,
       );
 
+  /// Poziom trudności do wyświetlenia (łatwy/średni/trudny) lub `null` bez opinii.
+  PoziomTrudnosci? get poziomTrudnosci =>
+      poziomTrudnosciFromSrednia(sredniaTrudnosc);
+
+  /// ECTS w formacie do wyświetlenia (bez zbędnego ".0"): 4.0 -> "4", 1.5 -> "1.5".
+  String? get ectsLabel => ects == null
+      ? null
+      : (ects! % 1 == 0 ? ects!.toStringAsFixed(0) : ects!.toString());
+
+  /// Link do strony przedmiotu w USOSweb (pełny opis/sylabus). Budowany z kodu -
+  /// nie kopiujemy chronionego opisu, tylko odsyłamy do oryginału w USOS.
+  String get usosUrl =>
+      '${AppConstants.usosWebBaseUrl}/kontroler.php'
+      '?_action=katalog2/przedmioty/pokazPrzedmiot&prz_kod=$kod';
+
   @override
   List<Object?> get props =>
-      [id, nazwa, kod, prowadzacy, semestr, opis, srednia, liczbaOpinii];
+      [id, nazwa, kod, prowadzacy, ects, srednia, sredniaTrudnosc, liczbaOpinii];
 }
 
 class PrzedmiotSzczegoly extends Equatable {

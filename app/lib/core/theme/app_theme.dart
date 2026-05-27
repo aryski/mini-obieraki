@@ -129,6 +129,22 @@ class AppTheme {
           borderRadius: BorderRadius.circular(8),
         ),
       ),
+      popupMenuTheme: PopupMenuThemeData(
+        color: scheme.surface,
+        surfaceTintColor: Colors.transparent,
+        elevation: 3,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+          side: BorderSide(
+            color: scheme.outlineVariant.withValues(alpha: 0.7),
+          ),
+        ),
+        textStyle: GoogleFonts.inter(
+          fontSize: 14,
+          fontWeight: FontWeight.w500,
+          color: scheme.onSurface,
+        ),
+      ),
     );
   }
 }

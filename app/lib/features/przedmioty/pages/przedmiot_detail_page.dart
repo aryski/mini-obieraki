@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:mini_obieraki/core/theme/app_theme.dart';
 import 'package:mini_obieraki/data/models/przedmiot.dart';
 import 'package:mini_obieraki/features/przedmioty/cubit/przedmiot_detail_cubit.dart';
@@ -13,6 +14,7 @@ import 'package:mini_obieraki/shared/widgets/empty_state.dart';
 import 'package:mini_obieraki/shared/widgets/error_view.dart';
 import 'package:mini_obieraki/shared/widgets/shimmer_card.dart';
 import 'package:mini_obieraki/shared/widgets/star_display.dart';
+import 'package:mini_obieraki/shared/widgets/trudnosc_chip.dart';
 
 class PrzedmiotDetailPage extends StatelessWidget {
   final String przedmiotId;
@@ -37,10 +39,10 @@ class PrzedmiotDetailPage extends StatelessWidget {
           },
           floatingActionButton:
               state is PrzedmiotDetailLoaded
-                  ? FloatingActionButton.extended(
+                  ? FilledButton.icon(
                       onPressed: () => context
                           .go('/przedmioty/$przedmiotId/dodaj-opinie'),
-                      icon: const Icon(Icons.rate_review_rounded),
+                      icon: const Icon(Icons.rate_review_rounded, size: 18),
                       label: const Text('Dodaj opinię'),
                     )
                   : null,
@@ -86,15 +88,6 @@ class PrzedmiotDetailPage extends StatelessWidget {
                 : context.go('/przedmioty'),
           ),
           title: Text(p.nazwa, overflow: TextOverflow.ellipsis),
-          actions: [
-            TextButton.icon(
-              onPressed: () =>
-                  context.go('/przedmioty/$przedmiotId/aktualizacja'),
-              icon: const Icon(Icons.update_rounded, size: 16),
-              label: const Text('Zgłoś aktualizację'),
-            ),
-            const Gap(8),
-          ],
         ),
         SliverToBoxAdapter(
           child: ContentWrapper(
@@ -103,20 +96,12 @@ class PrzedmiotDetailPage extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 _buildHeader(context, p),
-                if (p.opis != null) ...[
-                  const Gap(20),
-                  _buildSection(
-                    context,
-                    'Opis',
-                    Text(
-                      p.opis!,
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        height: 1.6,
-                        color: theme.colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                  ),
-                ],
+                const Gap(20),
+                _buildSection(
+                  context,
+                  'Opis',
+                  _UsosDescriptionLink(usosUrl: p.usosUrl),
+                ),
                 const Gap(20),
                 _buildRatingSection(context, details),
                 const Gap(20),
@@ -221,15 +206,20 @@ class PrzedmiotDetailPage extends StatelessWidget {
               ],
             ],
           ),
-          if (p.semestr != null) ...[
+          if (p.ectsLabel != null || p.poziomTrudnosci != null) ...[
             const Gap(12),
             Wrap(
               spacing: 8,
+              runSpacing: 8,
+              crossAxisAlignment: WrapCrossAlignment.center,
               children: [
-                _InfoChip(
-                  icon: Icons.calendar_today_outlined,
-                  label: 'Semestr ${p.semestr}',
-                ),
+                if (p.ectsLabel != null)
+                  _InfoChip(
+                    icon: Icons.school_outlined,
+                    label: '${p.ectsLabel} ECTS',
+                  ),
+                if (p.poziomTrudnosci != null)
+                  TrudnoscChip(poziom: p.poziomTrudnosci!),
               ],
             ),
           ],
@@ -298,6 +288,48 @@ class PrzedmiotDetailPage extends StatelessWidget {
         ),
         const Gap(12),
         content,
+      ],
+    );
+  }
+}
+
+/// Pełny opis/sylabus przedmiotu jest własnością PW i chroniony prawem autorskim,
+/// więc nie kopiujemy go do aplikacji - odsyłamy do oryginału w USOSweb.
+class _UsosDescriptionLink extends StatelessWidget {
+  final String usosUrl;
+
+  const _UsosDescriptionLink({required this.usosUrl});
+
+  Future<void> _open(BuildContext context) async {
+    final uri = Uri.parse(usosUrl);
+    final ok = await launchUrl(uri, mode: LaunchMode.externalApplication);
+    if (!ok && context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Nie udało się otworzyć strony USOS.')),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Pełny opis i sylabus przedmiotu znajdziesz w USOS.',
+          style: theme.textTheme.bodyMedium?.copyWith(
+            height: 1.6,
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
+        ),
+        const Gap(12),
+        OutlinedButton.icon(
+          onPressed: () => _open(context),
+          icon: const Icon(Icons.open_in_new_rounded, size: 18),
+          label: const Text('Zobacz pełny opis w USOS'),
+        ),
       ],
     );
   }
