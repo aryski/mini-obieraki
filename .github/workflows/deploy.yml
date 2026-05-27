@@ -112,7 +112,7 @@ jobs:
           cp zerops.yml "$DEPLOY_DIR/zerops.yml"
           cd "$DEPLOY_DIR"
           if [ "${{ github.ref_name }}" = "main" ]; then
-            zcli push --serviceId "${{ vars.ZEROPS_PROD_WEB_ID }}"
+            zcli push --serviceId "${{ vars.ZEROPS_PROD_WEB_ID }}" --noGit
           else
-            zcli push --serviceId "${{ vars.ZEROPS_DEV_WEB_ID }}"
+            zcli push --serviceId "${{ vars.ZEROPS_DEV_WEB_ID }}" --noGit
           fi
