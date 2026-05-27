@@ -134,7 +134,27 @@ def get_przedmiot(
     response_model=PrzedmiotResponse,
     status_code=status.HTTP_201_CREATED,
     summary="Rejestracja nowego przedmiotu obieralnego",
-    description="Rejestruje nowy przedmiot obieralny w lokalnym systemie na bazie oficjalnych danych pobranych automatycznie z USOS API."
+    description="Rejestruje nowy przedmiot obieralny w lokalnym systemie na bazie oficjalnych danych pobranych automatycznie z USOS API.",
+    responses={
+        400: {
+            "description": "Nieprawidłowy link USOS (brak parametru prz_kod/kod).",
+            "content": {"application/json": {"example": {
+                "detail": "Nieprawidłowy link USOS - nie znaleziono parametru 'prz_kod' ani 'kod'."
+            }}},
+        },
+        409: {
+            "description": "Przedmiot o tym kodzie już istnieje w bazie.",
+            "content": {"application/json": {"example": {
+                "detail": "Przedmiot o kodzie 1120-MA000-LSP-0524 już istnieje w systemie."
+            }}},
+        },
+        503: {
+            "description": "USOS API niedostępne lub zwróciło nieprawidłowe dane.",
+            "content": {"application/json": {"example": {
+                "detail": "USOS API niedostępne (status 500). Nie można dodać przedmiotu."
+            }}},
+        },
+    },
 )
 async def add_przedmiot(
     payload: PrzedmiotCreate,
