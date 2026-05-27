@@ -41,10 +41,11 @@ extension PoziomTrudnosciX on PoziomTrudnosci {
       };
 }
 
-PoziomTrudnosci poziomTrudnosciFromString(String s) => switch (s) {
-      'latwy' => PoziomTrudnosci.latwy,
-      'sredni' => PoziomTrudnosci.sredni,
-      'trudny' => PoziomTrudnosci.trudny,
+/// Backend zwraca trudność opinii jako liczbę 1–3 (`OpiniaCreate.trudnosc`).
+PoziomTrudnosci poziomTrudnosciFromInt(int v) => switch (v) {
+      1 => PoziomTrudnosci.latwy,
+      2 => PoziomTrudnosci.sredni,
+      3 => PoziomTrudnosci.trudny,
       _ => PoziomTrudnosci.sredni,
     };
 
@@ -95,7 +96,7 @@ class Opinia extends Equatable {
   factory Opinia.fromJson(Map<String, dynamic> json) => Opinia(
         id: json['id'] as String,
         ocena: json['ocena'] as int,
-        trudnosc: poziomTrudnosciFromString(json['trudnosc'] as String),
+        trudnosc: poziomTrudnosciFromInt(json['trudnosc'] as int),
         tresc: json['tresc'] as String,
         status: statusOpiniiFromString(json['status'] as String),
         zmoderowanaAutomatycznie:

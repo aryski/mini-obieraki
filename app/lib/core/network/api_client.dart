@@ -42,7 +42,9 @@ class ApiClient {
     var message = 'Błąd serwera';
     try {
       final body = jsonDecode(response.body) as Map<String, dynamic>;
-      message = body['message'] as String? ?? message;
+      // FastAPI zwraca błędy jako {"detail": ...}; zostawiamy fallback na "message".
+      final detail = body['detail'] ?? body['message'];
+      if (detail is String) message = detail;
     } catch (_) {}
     throw ApiException(response.statusCode, message);
   }
