@@ -145,7 +145,7 @@ async def add_przedmiot(
     existing = session.exec(select(Przedmiot).where(Przedmiot.kod == prz_kod)).first()
     if existing:
         raise HTTPException(
-            status_code=400,
+            status_code=409,
             detail=f"Przedmiot o kodzie {prz_kod} już istnieje w systemie."
         )
 
