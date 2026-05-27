@@ -108,5 +108,33 @@ class TestObierakiBackend(BaseTestCase):
         self.assertEqual(status_resp.json()["status"], "odrzucona")
         self.assertIsNotNone(status_resp.json()["powod_odrzucenia"])
 
+    def test_submit_opinia_moderation_failure_is_terminal(self):
+        import server.services.moderation as moderation
+
+        class _RaisingModels:
+            def generate_content(self, model, contents):
+                raise RuntimeError("Gemini niedostępne")
+
+        class _RaisingClient:
+            def __init__(self):
+                self.models = _RaisingModels()
+
+        original = moderation.client
+        moderation.client = _RaisingClient()
+        try:
+            response = self.client.post("/przedmioty/test_id/opinie", json={
+                "ocena": 4,
+                "trudnosc": 2,
+                "tresc": "Solidny przedmiot, sporo praktycznej wiedzy i dobrze prowadzony.",
+            })
+            self.assertEqual(response.status_code, 202)
+            auth_token = response.json()["token_opinii"]
+
+            status_resp = self.client.get(f"/opinie/{auth_token}")
+            self.assertEqual(status_resp.json()["status"], "blad_weryfikacji")
+            self.assertIsNotNone(status_resp.json()["powod_odrzucenia"])
+        finally:
+            moderation.client = original
+
 if __name__ == "__main__":
     unittest.main()

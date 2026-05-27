@@ -8,6 +8,8 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")
 # setUpClass anyway, but importing server.main below would crash without this — give it a
 # throwaway in-memory value before that import.
 os.environ.setdefault("DATABASE_URL", "sqlite:///:memory:")
+# moderation.py also requires GEMINI_API_KEY at import; tests override the client anyway.
+os.environ.setdefault("GEMINI_API_KEY", "test-key")
 
 from fastapi.testclient import TestClient
 from sqlmodel import Session, SQLModel, create_engine
