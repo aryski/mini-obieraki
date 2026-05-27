@@ -12,10 +12,8 @@ from sqlmodel import Session, select, func
 from dotenv import load_dotenv
 from google import genai
 
-# Ładowanie zmiennych środowiskowych z pliku .env
 load_dotenv()
 
-# Konfiguracja Google Gemini (nowy, ujednolicony pakiet google-genai)
 client = None
 gemini_api_key = os.environ.get("GEMINI_API_KEY")
 if gemini_api_key:
@@ -40,7 +38,6 @@ app = FastAPI(
     version="1.0.0",
 )
 
-# Konfiguracja CORS - kluczowe dla dewelopmentu z Flutter Web
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -49,22 +46,15 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-
 @app.on_event("startup")
 def on_startup():
     create_db_and_tables()
     seed_database_if_empty()
 
-
-# ==========================================
-# Funkcje Pomocnicze (USOS i Moderacja)
-# ==========================================
-
 def extract_prz_kod(usos_link: str) -> str:
-    """Wyciąga parametr prz_kod lub kod z linku USOS. Jeśli wejście nie jest linkiem, zwraca je bezpośrednio."""
     usos_link = usos_link.strip()
     if not usos_link.startswith("http"):
-        return usos_link  # Uznaj wejście za bezpośredni kod przedmiotu
+        return usos_link
 
     try:
         parsed = urllib.parse.urlparse(usos_link)
@@ -80,9 +70,7 @@ def extract_prz_kod(usos_link: str) -> str:
         detail="Nieprawidłowy link USOS - nie znaleziono parametru 'prz_kod' ani 'kod'."
     )
 
-
 async def moderate_opinia_in_background(opinia_id: str, custom_engine = None):
-    """Zadanie w tle wykonujące moderację opinii przez Gemini AI (z fallbackiem do reguł lokalnych)."""
     from server.database import engine as default_engine
     db_engine = custom_engine or default_engine
     with Session(db_engine) as session:
@@ -92,7 +80,6 @@ async def moderate_opinia_in_background(opinia_id: str, custom_engine = None):
 
         text = opinia.tresc_oryginalna.strip()
 
-        # 1. Sprawdzenie spamu/pustego tekstu (lokalnie dla oszczędności tokenów i czasu)
         if len(text) < 4 or text.lower() in ["test", "asdf", "qwerty", "brak"]:
             opinia.status = "odrzucona"
             opinia.powod_odrzucenia = "Treść opinii jest zbyt krótka lub stanowi spam."
@@ -100,10 +87,8 @@ async def moderate_opinia_in_background(opinia_id: str, custom_engine = None):
             session.commit()
             return
 
-        # Próba moderacji przez Gemini
         if client:
             try:
-                # Definiujemy prompt zmuszający Gemini do zwrócenia poprawnego JSON-a
                 prompt = f"""
                 Jesteś moderatorem opinii o przedmiotach akademickich na uczelni (Wydział MiNI PW).
                 Przeanalizuj poniższą opinię studenta o przedmiocie (ocenioną przez niego na {opinia.ocena}/5) i sklasyfikuj ją.
@@ -130,12 +115,10 @@ async def moderate_opinia_in_background(opinia_id: str, custom_engine = None):
                     contents=prompt,
                 )
                 
-                # Czyścimy formatowanie markdown jeśli model je dodał
                 json_text = response.text.strip()
                 if json_text.startswith("```"):
                     json_text = json_text.replace("```json", "").replace("```", "").strip()
 
-                # Parsujemy JSON
                 result = json.loads(json_text)
                 
                 opinia.status = result.get("status") or "opublikowana"
@@ -145,11 +128,10 @@ async def moderate_opinia_in_background(opinia_id: str, custom_engine = None):
                 
                 session.add(opinia)
                 session.commit()
-                return  # Sukces! Kończymy działanie.
+                return
             except Exception as e:
                 print(f"Błąd podczas moderacji Gemini AI: {e}. Uruchamiam lokalny fallback...")
 
-        # FALLBACK: Lokalny silnik regułowy (Mock LLM) w razie braku sieci, błędu lub braku klucza
         WULGARYZMY = [
             "gówno", "chuj", "kurw", "pierd", "jeb", "pizd", "suka", "debil", "idiot", "frajer"
         ]
@@ -192,11 +174,6 @@ async def moderate_opinia_in_background(opinia_id: str, custom_engine = None):
         session.add(opinia)
         session.commit()
 
-
-# ==========================================
-# Endpointy REST API
-# ==========================================
-
 @app.get("/przedmioty", response_model=List[PrzedmiotResponse])
 def get_przedmioty(
     search: Optional[str] = Query(None, description="Filtrowanie po nazwie lub kodzie"),
@@ -204,7 +181,6 @@ def get_przedmioty(
     order: str = Query("desc", description="Kierunek: asc, desc"),
     session: Session = Depends(get_session),
 ):
-    # Pobieramy przedmioty
     query = select(Przedmiot)
     if search:
         query = query.where(
@@ -216,7 +192,6 @@ def get_przedmioty(
     results = []
 
     for p in przedmioty:
-        # Pobieramy opinie publiczne powiązane z przedmiotem
         opinie_query = select(Opinia).where(
             (Opinia.przedmiot_id == p.id)
             & ((Opinia.status == "opublikowana") | (Opinia.status == "zmieniona_i_opublikowana"))
@@ -240,7 +215,6 @@ def get_przedmioty(
             )
         )
 
-    # Sortowanie wyników
     is_desc = order.lower() == "desc"
     
     if sort_by == "srednia":
@@ -248,17 +222,14 @@ def get_przedmioty(
     elif sort_by == "popularnosc":
         results.sort(key=lambda x: x.liczba_opinii, reverse=is_desc)
     elif sort_by == "trudnosc":
-        # Przedmioty bez opinii lądują na samym końcu niezależnie od kierunku sortowania
         z_opiniami = [r for r in results if r.liczba_opinii > 0]
         bez_opinii = [r for r in results if r.liczba_opinii == 0]
         
         z_opiniami.sort(key=lambda x: x.srednia_trudnosc, reverse=is_desc)
         
-        # Łączymy listy (bez opinii zawsze na końcu)
         results = z_opiniami + bez_opinii
 
     return results
-
 
 @app.get("/przedmioty/{id}", response_model=PrzedmiotDetailsResponse)
 def get_przedmiot(id: str, session: Session = Depends(get_session)):
@@ -266,7 +237,6 @@ def get_przedmiot(id: str, session: Session = Depends(get_session)):
     if not przedmiot:
         raise HTTPException(status_code=404, detail="Nie znaleziono przedmiotu.")
 
-    # Pobieramy publiczne opinie
     opinie_query = select(Opinia).where(
         (Opinia.przedmiot_id == id)
         & ((Opinia.status == "opublikowana") | (Opinia.status == "zmieniona_i_opublikowana"))
@@ -278,14 +248,12 @@ def get_przedmiot(id: str, session: Session = Depends(get_session)):
     srednia = round(sum(o.ocena for o in opinie) / liczba_opinii, 1) if liczba_opinii > 0 else 0.0
     srednia_trudnosc = round(sum(o.trudnosc for o in opinie) / liczba_opinii, 1) if liczba_opinii > 0 else 0.0
 
-    # Rozkład ocen
     rozklad = {"1": 0, "2": 0, "3": 0, "4": 0, "5": 0}
     for o in opinie:
         str_rating = str(o.ocena)
         if str_rating in rozklad:
             rozklad[str_rating] += 1
 
-    # Mapowanie opinii na format publiczny
     opinie_publiczne = [
         OpiniaPublicResponse(
             id=o.id,
@@ -312,12 +280,10 @@ def get_przedmiot(id: str, session: Session = Depends(get_session)):
         opinie=opinie_publiczne,
     )
 
-
 @app.post("/przedmioty", response_model=PrzedmiotResponse, status_code=status.HTTP_201_CREATED)
 async def add_przedmiot(payload: PrzedmiotCreate, session: Session = Depends(get_session)):
     prz_kod = extract_prz_kod(payload.usos_link)
 
-    # Sprawdzamy deduplikację
     existing = session.exec(select(Przedmiot).where(Przedmiot.kod == prz_kod)).first()
     if existing:
         raise HTTPException(
@@ -325,7 +291,6 @@ async def add_przedmiot(payload: PrzedmiotCreate, session: Session = Depends(get
             detail=f"Przedmiot o kodzie {prz_kod} już istnieje w systemie."
         )
 
-    # Odpytywanie USOS API
     nazwa = f"Przedmiot {prz_kod}"
     ects = 4
     prowadzacy = None
@@ -337,17 +302,13 @@ async def add_przedmiot(payload: PrzedmiotCreate, session: Session = Depends(get
             if response.status_code == 200:
                 data = response.json()
                 if data and "name" in data:
-                    # Pobieramy nazwę polską, a w razie braku angielską
                     names = data["name"]
                     nazwa = names.get("pl") or names.get("en") or nazwa
                     
-                    # ECTS
                     ects = data.get("ects_credits_simplified") or ects
     except Exception as e:
-        # Logujemy błąd ale nie wysypujemy aplikacji - dla trybu offline pozwalamy dodać na bazie kodu
         print(f"Błąd USOS API: {e}. Używam danych domyślnych.")
 
-    # Tworzymy nowy przedmiot. Używamy prz_kod jako ID bazy danych, co ułatwi linkowanie
     nowy_przedmiot = Przedmiot(
         id=prz_kod,
         nazwa=nazwa,
@@ -371,7 +332,6 @@ async def add_przedmiot(payload: PrzedmiotCreate, session: Session = Depends(get
         srednia_trudnosc=0.0,
     )
 
-
 @app.post("/przedmioty/{id}/opinie", response_model=OpiniaSubmitResponse, status_code=status.HTTP_202_ACCEPTED)
 def submit_opinia(
     id: str,
@@ -379,12 +339,10 @@ def submit_opinia(
     background_tasks: BackgroundTasks,
     session: Session = Depends(get_session)
 ):
-    # Weryfikacja czy przedmiot istnieje
     przedmiot = session.get(Przedmiot, id)
     if not przedmiot:
         raise HTTPException(status_code=404, detail="Przedmiot o tym identyfikatorze nie istnieje.")
 
-    # Tworzenie identyfikatorów
     opinia_id = f"opn_{int(datetime.now().timestamp())}_{uuid.uuid4().hex[:6]}"
     identyfikator_autora = f"auth_{uuid.uuid4().hex}"
 
@@ -402,7 +360,6 @@ def submit_opinia(
     session.commit()
     session.refresh(nowa_opinia)
 
-    # Uruchamiamy moderację w tle
     background_tasks.add_task(moderate_opinia_in_background, opinia_id, session.bind)
 
     return OpiniaSubmitResponse(
@@ -410,7 +367,6 @@ def submit_opinia(
         identyfikator_autora=identyfikator_autora,
         status="oczekuje",
     )
-
 
 @app.get("/opinie/{identyfikator_autora}", response_model=OpiniaAuthorResponse)
 def get_opinia_status(identyfikator_autora: str, session: Session = Depends(get_session)):
@@ -431,21 +387,14 @@ def get_opinia_status(identyfikator_autora: str, session: Session = Depends(get_
         powod_odrzucenia=opinia.powod_odrzucenia,
     )
 
-
-# ==========================================
-# Inicjalizacja Danych Testowych (Seeding)
-# ==========================================
-
 def seed_database_if_empty():
-    """Wypełnia bazę danych początkowymi przedmiotami i opiniami z Mocka frontendu, jeśli baza jest pusta."""
     from server.database import engine
     with Session(engine) as session:
         if session.exec(select(func.count(Przedmiot.id))).one() > 0:
-            return  # Baza nie jest pusta, nie seedujemy
+            return
 
         print("Inicjalizowanie bazy danych początkowymi danymi testowymi...")
 
-        # Przedmioty testowe
         mock_przedmioty = [
             Przedmiot(
                 id="1",
@@ -495,10 +444,8 @@ def seed_database_if_empty():
             session.add(p)
         session.commit()
 
-        # Opinie testowe powiązane z przedmiotami
         now = datetime.now()
         mock_opinie = [
-            # Przedmiot 1 (Analiza Funkcjonalna)
             Opinia(
                 id="o1",
                 identyfikator_autora="auth_mock1",
@@ -532,7 +479,6 @@ def seed_database_if_empty():
                 status="zmieniona_i_opublikowana",
                 data_opublikowania=now,
             ),
-            # Przedmiot 2 (Uczenie Maszynowe)
             Opinia(
                 id="o4",
                 identyfikator_autora="auth_mock4",
@@ -566,7 +512,6 @@ def seed_database_if_empty():
                 status="opublikowana",
                 data_opublikowania=now,
             ),
-            # Przedmiot 3 (Kryptografia)
             Opinia(
                 id="o7",
                 identyfikator_autora="auth_mock7",
@@ -589,7 +534,6 @@ def seed_database_if_empty():
                 status="opublikowana",
                 data_opublikowania=now,
             ),
-            # Przedmiot 4 (Teoria Gier)
             Opinia(
                 id="o9",
                 identyfikator_autora="auth_mock9",
@@ -612,7 +556,6 @@ def seed_database_if_empty():
                 status="opublikowana",
                 data_opublikowania=now,
             ),
-            # Przedmiot 5 (Programowanie Funkcyjne)
             Opinia(
                 id="o11",
                 identyfikator_autora="auth_mock11",
@@ -635,7 +578,6 @@ def seed_database_if_empty():
                 status="opublikowana",
                 data_opublikowania=now,
             ),
-            # Przedmiot 6 (Topologia)
             Opinia(
                 id="o13",
                 identyfikator_autora="auth_mock13",
