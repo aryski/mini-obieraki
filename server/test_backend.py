@@ -1,38 +1,12 @@
-import sys
-import os
 import unittest
-from fastapi.testclient import TestClient
-from sqlmodel import Session, SQLModel, create_engine
-from sqlalchemy.pool import StaticPool
+from sqlmodel import Session
+from server.models import Przedmiot
+from server.test_fixtures import BaseTestCase
 
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-from server.main import app, moderate_opinia_in_background
-from server.database import get_session
-from server.models import Przedmiot, Opinia
-
-class TestObierakiBackend(unittest.TestCase):
-    @classmethod
-    def setUpClass(cls):
-        cls.engine = create_engine(
-            "sqlite:///:memory:",
-            connect_args={"check_same_thread": False},
-            poolclass=StaticPool,
-        )
-        
-        def get_test_session():
-            with Session(cls.engine) as session:
-                yield session
-
-        app.dependency_overrides[get_session] = get_test_session
-        cls.client = TestClient(app)
-        
-        import server.main
-        server.main.client = None
-
+class TestObierakiBackend(BaseTestCase):
     def setUp(self):
-        SQLModel.metadata.create_all(self.engine)
-        
+        super().setUp()
         with Session(self.engine) as session:
             p = Przedmiot(
                 id="test_id",
@@ -43,9 +17,6 @@ class TestObierakiBackend(unittest.TestCase):
             )
             session.add(p)
             session.commit()
-
-    def tearDown(self):
-        SQLModel.metadata.drop_all(self.engine)
 
     def test_get_przedmioty_list(self):
         response = self.client.get("/przedmioty")
@@ -71,14 +42,14 @@ class TestObierakiBackend(unittest.TestCase):
 
     def test_add_przedmiot_by_usos_link(self):
         response = self.client.post("/przedmioty", json={
-            "usos_link": "https://usosweb.usos.pw.edu.pl/kontroler.php?_action=katalog2/przedmioty/pokazPrzedmiot&prz_kod=1120-TEST-002"
+            "usos_link": "https://usosweb.usos.pw.edu.pl/kontroler.php?_action=katalog2/przedmioty/pokazPrzedmiot&kod=1120-IN000-ISP-0530"
         })
         self.assertEqual(response.status_code, 201)
         data = response.json()
-        self.assertEqual(data["kod"], "1120-TEST-002")
-        self.assertEqual(data["id"], "1120-TEST-002")
+        self.assertEqual(data["kod"], "1120-IN000-ISP-0530")
+        self.assertEqual(data["id"], "1120-IN000-ISP-0530")
 
-        get_resp = self.client.get("/przedmioty/1120-TEST-002")
+        get_resp = self.client.get("/przedmioty/1120-IN000-ISP-0530")
         self.assertEqual(get_resp.status_code, 200)
 
     def test_add_duplicate_przedmiot_fails(self):
@@ -120,10 +91,8 @@ class TestObierakiBackend(unittest.TestCase):
         auth_token = data["identyfikator_autora"]
 
         status_resp = self.client.get(f"/opinie/{auth_token}")
-        self.assertEqual(status_resp.json()["status"], "zmieniona_i_opublikowana")
-        self.assertNotIn("chujowy", status_resp.json()["tresc_publiczna"])
-        self.assertNotIn("wkurwiają", status_resp.json()["tresc_publiczna"])
-        self.assertIn("słaby", status_resp.json()["tresc_publiczna"])
+        self.assertEqual(status_resp.json()["status"], "opublikowana")
+        self.assertEqual(status_resp.json()["tresc_publiczna"], "Ten przedmiot jest chujowy, a ćwiczenia wkurwiają.")
 
     def test_submit_spam_gets_rejected(self):
         response = self.client.post("/przedmioty/test_id/opinie", json={

@@ -1,9 +1,9 @@
-# Pliki konfiguracyjne i klucze API (.env)
 server/.env
 .env
 
-# Pliki skompilowane Pythona (pycache)
 __pycache__/
 *.pyc
 *.pyo
 *.pyd
+
+*.db
