@@ -4,6 +4,11 @@ import unittest
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
+# server.database requires DATABASE_URL at import time. The tests override the engine in
+# setUpClass anyway, but importing server.main below would crash without this — give it a
+# throwaway in-memory value before that import.
+os.environ.setdefault("DATABASE_URL", "sqlite:///:memory:")
+
 from fastapi.testclient import TestClient
 from sqlmodel import Session, SQLModel, create_engine
 from sqlalchemy.pool import StaticPool

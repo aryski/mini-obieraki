@@ -4,6 +4,50 @@ Aplikacja, w której studenci MiNI PW oceniają i opiniują przedmioty obieralne
 Opinie są moderowane przez LLM - jeśli opinia jest niekulturalna lub niekonstruktywna,
 LLM przepisuje ją do publikowalnej wersji zamiast po prostu odrzucać.
 
+## Uruchomienie lokalne
+
+Repo dzieli się na backend (`server/`, FastAPI) i frontend (`app/`, Flutter web). Uruchom backend
+jako pierwszy — frontend domyślnie woła `http://localhost:8000`.
+
+### Backend (FastAPI + PostgreSQL)
+
+Wymagane: Python 3.12+ oraz Docker. Backend czyta połączenie ze zmiennej `DATABASE_URL`
+(wymagana — nie ma fallbacku do plikowej bazy).
+
+```bash
+# 1. PostgreSQL w Dockerze
+docker run -d --name obieraki-pg \
+  -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=obieraki \
+  -p 5432:5432 postgres:16
+
+# 2. Zależności w wirtualnym środowisku
+python3 -m venv .venv
+.venv/bin/pip install -r server/requirements.txt
+
+# 3. Konfiguracja — plik .env w katalogu repo (ładowany przez load_dotenv())
+echo 'DATABASE_URL=postgresql+psycopg://postgres:postgres@localhost:5432/obieraki' > .env
+# Opcjonalnie moderacja LLM; bez tego klucza opinie zostają w statusie "oczekuje":
+# echo 'GEMINI_API_KEY=twoj_klucz' >> .env
+
+# 4. Start (przy pierwszym uruchomieniu baza zaseeduje 6 przykładowych przedmiotów)
+.venv/bin/python -m uvicorn server.main:app --reload --port 8000
+```
+
+API działa na `http://localhost:8000`, dokumentacja Swagger na `http://localhost:8000/docs`.
+
+### Frontend (Flutter web)
+
+Wymagane: Flutter SDK (Dart `^3.10`).
+
+```bash
+cd app
+flutter pub get
+flutter run -d chrome
+```
+
+Frontend domyślnie łączy się z `http://localhost:8000`. Inny adres backendu wskażesz przez
+`flutter run -d chrome --dart-define=API_URL=http://adres:port`.
+
 ## Po co to jest
 
 - Przy zapisach na obieralne studenci nie mają jednego miejsca z rzetelnymi opiniami.

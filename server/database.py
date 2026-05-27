@@ -1,10 +1,12 @@
+import os
+
 from sqlmodel import SQLModel, create_engine, Session
 
-DATABASE_FILE = "obieraki.db"
-DATABASE_URL = f"sqlite:///{DATABASE_FILE}"
+# `DATABASE_URL` (postgresql+psycopg://...) jest wstrzykiwany z serwisu `db` na Zerops.
+# Lokalnie ustaw go w `.env` — wskaż na swoją instancję Postgresa.
+DATABASE_URL = os.environ["DATABASE_URL"]
 
-connect_args = {"check_same_thread": False}
-engine = create_engine(DATABASE_URL, connect_args=connect_args)
+engine = create_engine(DATABASE_URL)
 
 def create_db_and_tables():
     SQLModel.metadata.create_all(engine)
