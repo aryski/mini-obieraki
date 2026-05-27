@@ -101,6 +101,16 @@ jobs:
           ZEROPS_TOKEN: ${{ secrets.ZEROPS_TOKEN }}
         run: |
           zcli login "$ZEROPS_TOKEN"
+          # zcli respects .gitignore for files inside the repo, and app/build is gitignored,
+          # so the prebuilt statics never reach Zerops. Push from a copy OUTSIDE the repo
+          # (no .git ancestor → no ignore filtering), reusing the same zerops.yml. The
+          # app/build/web path is recreated so the `web` setup's deployFiles still matches.
+          DEPLOY_DIR="$RUNNER_TEMP/web-deploy"
+          rm -rf "$DEPLOY_DIR"
+          mkdir -p "$DEPLOY_DIR/app/build/web"
+          cp -a app/build/web/. "$DEPLOY_DIR/app/build/web/"
+          cp zerops.yml "$DEPLOY_DIR/zerops.yml"
+          cd "$DEPLOY_DIR"
           if [ "${{ github.ref_name }}" = "main" ]; then
             zcli push --serviceId "${{ vars.ZEROPS_PROD_WEB_ID }}"
           else

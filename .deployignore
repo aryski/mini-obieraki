@@ -1,8 +1,0 @@
-# Used by `zcli push` to package source for deployment — when this file exists, zcli uses
-# it INSTEAD of .gitignore. We intentionally do NOT exclude app/build/web here: the `web`
-# service deploys those prebuilt Flutter statics, which are gitignored and would otherwise
-# be dropped from the upload (the cause of "target 'app/build/web/~' is missing").
-.git/
-.dart_tool/
-slides/
-*.zip
