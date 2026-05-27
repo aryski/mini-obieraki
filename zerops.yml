@@ -1,0 +1,49 @@
+# Build+run recipe for Zerops. The same setup names (= service hostnames) are used in
+# both projects: mini-obieraki-dev and mini-obieraki-prod. Environments differ by project,
+# not by name — so a single `api` and `web` setup is enough.
+zerops:
+  # --- Backend: FastAPI (uvicorn) ---
+  - setup: api
+    build:
+      base: ubuntu/python@3.12
+      buildCommands:
+        - python3 -m venv .venv
+        - . .venv/bin/activate && pip install -r server/requirements.txt
+      # `server/` must stay a directory — the code imports the `server.*` package
+      # (e.g. `uvicorn server.main:app`, `from server.database import ...`).
+      # We also ship `.venv` (the established Zerops pattern for Python/FastAPI).
+      deployFiles:
+        - server
+        - .venv
+      cache:
+        - .venv
+    run:
+      base: ubuntu/python@3.12
+      ports:
+        - port: 8000
+          httpSupport: true
+      envVariables:
+        # Injected from the `db` service in the SAME project. NOTE: the backend still
+        # writes to SQLite (server/database.py) — this variable is waiting for the
+        # database.py fix (separate PR). Confirm the ${db_*} names in the `db` service panel.
+        DATABASE_URL: postgresql+psycopg://${db_user}:${db_password}@${db_hostname}:${db_port}/${db_dbName}
+      start: .venv/bin/uvicorn server.main:app --host 0.0.0.0 --port 8000
+
+  # --- Frontend: Flutter web (statics built in GitHub Actions, only served here) ---
+  - setup: web
+    build:
+      # Statics arrive prebuilt from CI (Zerops has no Flutter/Dart base image), so the
+      # build compiles nothing — it just needs some build base to pass the files through.
+      # The runtime (nginx) comes from the `static` service type, so we omit run.base.
+      base: ubuntu/nodejs@22
+      deployFiles:
+        # `/~` = the directory contents land at the server root.
+        - app/build/web/~
+    run:
+      # SPA fallback — Flutter web + go_router use URL paths, so deep links and refreshes
+      # must fall back to index.html instead of returning 404.
+      routing:
+        redirects:
+          - from: /*
+            to: /index.html
+            status: 200

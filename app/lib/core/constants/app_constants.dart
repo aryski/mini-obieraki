@@ -1,5 +1,11 @@
 class AppConstants {
-  static const String baseUrl = 'https://api.mini-obieraki.pl';
+  /// Backend address injected per environment at build time
+  /// (`--dart-define=API_URL=...`). Without the flag (local dev) the app hits
+  /// a locally running FastAPI.
+  static const String baseUrl = String.fromEnvironment(
+    'API_URL',
+    defaultValue: 'http://localhost:8000',
+  );
 
   /// Oficjalne USOS API (instalacja PW). Z wklejonego linku USOS wyciągamy
   /// `prz_kod` i odpytujemy `services/courses/course` - nie scrapujemy HTML.

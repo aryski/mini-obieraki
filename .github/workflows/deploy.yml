@@ -6,13 +6,63 @@ on:
       - main
       - develop
 
-jobs:
-  deploy:
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      deployments: write
+# develop → Zerops project mini-obieraki-dev
+# main    → Zerops project mini-obieraki-prod
+# Environments are told apart by Service ID (different in each project);
+# ZEROPS_TOKEN is an account token and works in both projects.
 
+jobs:
+  # --- Quality gate: backend tests must pass before any deploy ---
+  backend-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+
+      - name: Install dependencies
+        run: pip install -r server/requirements.txt
+
+      - name: Run tests
+        run: python -m unittest discover -s server -p 'test_*.py'
+
+  # --- Deploy backend to Zerops (zcli reads zerops.yml, setup `api`) ---
+  backend-deploy:
+    needs: backend-test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install zcli
+        run: npm install -g @zerops/zcli
+
+      - name: Deploy backend
+        env:
+          ZEROPS_TOKEN: ${{ secrets.ZEROPS_TOKEN }}
+        run: |
+          zcli login "$ZEROPS_TOKEN"
+          if [ "${{ github.ref_name }}" = "main" ]; then
+            zcli push --serviceId "${{ vars.ZEROPS_PROD_API_ID }}"
+          else
+            zcli push --serviceId "${{ vars.ZEROPS_DEV_API_ID }}"
+          fi
+
+  # --- Build Flutter web + deploy to Zerops (statics, setup `web`) ---
+  # Skipped until the API URL for the given environment is set. Resolves the chicken-and-egg:
+  # the `api` subdomain can only be enabled AFTER its first deploy, but the frontend needs
+  # that URL to build. So: 1. the first run deploys `api` (this job is skipped),
+  # 2. you enable the subdomain and set ZEROPS_*_API_URL, 3. the next run builds the frontend.
+  frontend-build-deploy:
+    needs: backend-test
+    if: ${{ (github.ref_name == 'main' && vars.ZEROPS_PROD_API_URL != '') || (github.ref_name == 'develop' && vars.ZEROPS_DEV_API_URL != '') }}
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
@@ -26,22 +76,33 @@ jobs:
         working-directory: app
         run: flutter pub get
 
+      - name: Resolve API URL for environment
+        id: api
+        run: |
+          if [ "${{ github.ref_name }}" = "main" ]; then
+            echo "url=${{ vars.ZEROPS_PROD_API_URL }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "url=${{ vars.ZEROPS_DEV_API_URL }}" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Build
         working-directory: app
-        run: flutter build web --wasm --release --base-href /
+        run: flutter build web --wasm --release --base-href / --dart-define=API_URL=${{ steps.api.outputs.url }}
 
-      - name: Deploy to staging
-        if: github.ref == 'refs/heads/develop'
-        uses: cloudflare/wrangler-action@v3
+      - uses: actions/setup-node@v4
         with:
-          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: pages deploy app/build/web --project-name=mini-obieraki --branch=develop
+          node-version: '20'
 
-      - name: Deploy to production
-        if: github.ref == 'refs/heads/main'
-        uses: cloudflare/wrangler-action@v3
-        with:
-          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: pages deploy app/build/web --project-name=mini-obieraki --branch=main
+      - name: Install zcli
+        run: npm install -g @zerops/zcli
+
+      - name: Deploy frontend
+        env:
+          ZEROPS_TOKEN: ${{ secrets.ZEROPS_TOKEN }}
+        run: |
+          zcli login "$ZEROPS_TOKEN"
+          if [ "${{ github.ref_name }}" = "main" ]; then
+            zcli push --serviceId "${{ vars.ZEROPS_PROD_WEB_ID }}"
+          else
+            zcli push --serviceId "${{ vars.ZEROPS_DEV_WEB_ID }}"
+          fi
