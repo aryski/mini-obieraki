@@ -23,7 +23,7 @@ async def moderate_opinia_in_background(opinia_id: str, custom_engine=None):
 
         text = opinia.tresc_oryginalna.strip()
 
-        if len(text) < 4 or text.lower() in ["test", "asdf", "qwerty", "brak"]:
+        if len(text) < 10:
             opinia.status = "odrzucona"
             opinia.powod_odrzucenia = "Treść opinii jest zbyt krótka lub stanowi spam."
             session.add(opinia)
