@@ -15,10 +15,12 @@
 - [ ] `BE` `GET /opinie/{identyfikator}` - status i treść własnej opinii (też gdy `oczekuje`).
 - [ ] `BE` Generowanie identyfikatora opinii (token nie do odgadnięcia).
 - [ ] `BE` Przechowywanie oryginału opinii (audyt) osobno od wersji publicznej.
-- [ ] `BE` Integracja z LLM + prompt klasyfikujący (niekulturalna / niekonstruktywna / spam / ok).
+- [ ] `BE` Integracja z LLM + prompt klasyfikujący (niekulturalna / niekonstruktywna / o osobie zamiast o zajęciach / spam / ok).
 - [ ] `BE` Niekulturalna/niekonstruktywna → przepisanie z zachowaniem sensu i oceny → `zmieniona_i_opublikowana`.
+- [ ] `BE` Opinia o **cechach osoby prowadzącego** (zamiast o zajęciach) → przeredagowanie na ocenę jakości zajęć → `zmieniona_i_opublikowana`. Atak personalny / niesprawdzony zarzut faktu o osobie → `odrzucona` + powód.
 - [ ] `BE` Ok → `opublikowana`. Spam/nie na temat → `odrzucona` + powód (bez publikacji).
-- [ ] `FE` Ekran dodawania opinii: ocena (1–5) + tekst + walidacja.
+- [ ] `FE` Ekran dodawania opinii: ocena (1–5) + **poziom trudności (Łatwy/Średni/Trudny)** + tekst + walidacja.
+- [ ] `BE` Pole `trudnosc` (łatwy/średni/trudny = 1–3) w opinii; średnia trudność per przedmiot liczona z opinii opublikowanych.
 - [ ] `FE` Zapis identyfikatora lokalnie po wysłaniu.
 - [ ] `FE` Ekran „Status mojej opinii": podgląd opinii oczekującej i statusu po identyfikatorze.
 - [ ] `FE` Obsługa werdyktów: `odrzucona` (powód, tekst do poprawki), `zmieniona_i_opublikowana` (plakietka „zmoderowano automatycznie"), `opublikowana`.
