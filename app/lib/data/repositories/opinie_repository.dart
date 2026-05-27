@@ -1,55 +1,42 @@
+import 'package:mini_obieraki/core/network/api_client.dart';
 import 'package:mini_obieraki/core/utils/local_storage.dart';
 import 'package:mini_obieraki/data/models/opinia.dart';
 
 class OpinieRepository {
+  final ApiClient _api;
   final LocalStorage _storage = LocalStorage();
 
-  // In-memory store for mock opinions pending moderation.
-  final Map<String, Opinia> _pending = {};
+  OpinieRepository(this._api);
 
+  /// Zwraca `token_opinii` do śledzenia statusu — zapisujemy go też lokalnie.
   Future<String> addOpinia({
     required String przedmiotId,
     required int ocena,
     required PoziomTrudnosci trudnosc,
     required String tresc,
   }) async {
-    await Future.delayed(const Duration(milliseconds: 900));
-    final id =
-        'opn_${DateTime.now().millisecondsSinceEpoch}_${przedmiotId.hashCode.abs()}';
-    _pending[id] = Opinia(
-      id: id,
-      ocena: ocena,
-      trudnosc: trudnosc,
-      tresc: tresc,
-      status: StatusOpinii.oczekuje,
-    );
-    await _storage.addOpiniaIdentifier(id);
-    // Simulate async moderation after 3 seconds
-    Future.delayed(const Duration(seconds: 3), () {
-      _pending[id] = Opinia(
-        id: id,
-        ocena: ocena,
-        trudnosc: trudnosc,
-        tresc: tresc,
-        status: StatusOpinii.opublikowana,
-        dataOpublikowania: DateTime.now(),
-      );
+    final response = await _api.post('/przedmioty/$przedmiotId/opinie', {
+      'ocena': ocena,
+      'trudnosc': trudnosc.wartosc,
+      'tresc': tresc,
     });
-    return id;
+    final token = (response as Map<String, dynamic>)['token_opinii'] as String;
+    await _storage.addOpiniaIdentifier(token);
+    return token;
   }
 
+  /// Sprawdza status opinii po tokenie. Odpowiedź ma inny kształt niż publiczna
+  /// opinia: niesie tylko `tresc_publiczna` (null dopóki moderacja nie opublikuje
+  /// treści), więc mapujemy ręcznie z pustym tekstem jako fallbackiem.
   Future<Opinia> getOpiniaStatus(String identifier) async {
-    await Future.delayed(const Duration(milliseconds: 400));
-    final opinia = _pending[identifier];
-    if (opinia != null) return opinia;
-    // Simulate a published opinion found by identifier
+    final json = await _api.get('/opinie/$identifier') as Map<String, dynamic>;
     return Opinia(
-      id: identifier,
-      ocena: 4,
-      trudnosc: PoziomTrudnosci.sredni,
-      tresc: 'Przykładowa opinia.',
-      status: StatusOpinii.opublikowana,
-      dataOpublikowania: DateTime.now().subtract(const Duration(days: 1)),
+      id: json['id'] as String,
+      ocena: json['ocena'] as int,
+      trudnosc: poziomTrudnosciFromInt(json['trudnosc'] as int),
+      tresc: json['tresc_publiczna'] as String? ?? '',
+      status: statusOpiniiFromString(json['status'] as String),
+      powodOdrzucenia: json['powod_odrzucenia'] as String?,
     );
   }
 
