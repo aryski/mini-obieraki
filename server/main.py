@@ -6,7 +6,7 @@ from datetime import datetime
 from typing import List, Optional, Dict
 import uuid
 import httpx
-from fastapi import FastAPI, BackgroundTasks, Depends, HTTPException, Query, status
+from fastapi import FastAPI, BackgroundTasks, Depends, HTTPException, Query, Path, status
 from fastapi.middleware.cors import CORSMiddleware
 from sqlmodel import Session, select, func
 from dotenv import load_dotenv
@@ -123,7 +123,10 @@ async def moderate_opinia_in_background(opinia_id: str, custom_engine = None):
                 
                 opinia.status = result.get("status") or "opublikowana"
                 opinia.powod_odrzucenia = result.get("powod_odrzucenia")
-                opinia.tresc_publiczna = result.get("tresc_publiczna") or text
+                if opinia.status == "odrzucona":
+                    opinia.tresc_publiczna = None
+                else:
+                    opinia.tresc_publiczna = result.get("tresc_publiczna") or text
                 opinia.data_opublikowania = datetime.now() if opinia.status != "odrzucona" else None
                 
                 session.add(opinia)
@@ -142,6 +145,7 @@ async def moderate_opinia_in_background(opinia_id: str, custom_engine = None):
         if is_personal_attack:
             opinia.status = "odrzucona"
             opinia.powod_odrzucenia = "Opinia zawiera niedozwolone ataki personalne lub agresywne sformułowania pod adresem prowadzącego."
+            opinia.tresc_publiczna = None
         elif has_profanity:
             cleaned_text = text
             replacements = {
@@ -174,11 +178,16 @@ async def moderate_opinia_in_background(opinia_id: str, custom_engine = None):
         session.add(opinia)
         session.commit()
 
-@app.get("/przedmioty", response_model=List[PrzedmiotResponse])
+@app.get(
+    "/przedmioty",
+    response_model=List[PrzedmiotResponse],
+    summary="Pobieranie listy przedmiotów obieralnych",
+    description="Zwraca listę wszystkich przedmiotów obieralnych zarejestrowanych w systemie, z opcjami wyszukiwania oraz sortowania."
+)
 def get_przedmioty(
-    search: Optional[str] = Query(None, description="Filtrowanie po nazwie lub kodzie"),
-    sort_by: str = Query("srednia", description="Sortowanie po: srednia, trudnosc, popularnosc"),
-    order: str = Query("desc", description="Kierunek: asc, desc"),
+    search: Optional[str] = Query(None, description="Filtrowanie wyników po nazwie lub kodzie przedmiotu"),
+    sort_by: str = Query("srednia", description="Sortowanie po: 'srednia' (średnia ocena), 'trudnosc' (średnia trudność) lub 'popularnosc' (liczba opinii)"),
+    order: str = Query("desc", description="Kierunek sortowania: 'desc' (malejąco) lub 'asc' (rosnąco)"),
     session: Session = Depends(get_session),
 ):
     query = select(Przedmiot)
@@ -231,8 +240,16 @@ def get_przedmioty(
 
     return results
 
-@app.get("/przedmioty/{id}", response_model=PrzedmiotDetailsResponse)
-def get_przedmiot(id: str, session: Session = Depends(get_session)):
+@app.get(
+    "/przedmioty/{id}",
+    response_model=PrzedmiotDetailsResponse,
+    summary="Szczegółowe informacje o przedmiocie",
+    description="Pobiera pełne dane pojedynczego przedmiotu, w tym rozkład ocen (1-5) oraz listę wszystkich zmoderowanych, publicznych opinii."
+)
+def get_przedmiot(
+    id: str = Path(..., description="Identyfikator przedmiotu (kod przedmiotu z USOS, np. '1120-MA001-ISP-0524')"),
+    session: Session = Depends(get_session)
+):
     przedmiot = session.get(Przedmiot, id)
     if not przedmiot:
         raise HTTPException(status_code=404, detail="Nie znaleziono przedmiotu.")
@@ -280,8 +297,17 @@ def get_przedmiot(id: str, session: Session = Depends(get_session)):
         opinie=opinie_publiczne,
     )
 
-@app.post("/przedmioty", response_model=PrzedmiotResponse, status_code=status.HTTP_201_CREATED)
-async def add_przedmiot(payload: PrzedmiotCreate, session: Session = Depends(get_session)):
+@app.post(
+    "/przedmioty",
+    response_model=PrzedmiotResponse,
+    status_code=status.HTTP_201_CREATED,
+    summary="Rejestracja nowego przedmiotu obieralnego",
+    description="Rejestruje nowy przedmiot obieralny w lokalnym systemie na bazie oficjalnych danych pobranych automatycznie z USOS API."
+)
+async def add_przedmiot(
+    payload: PrzedmiotCreate,
+    session: Session = Depends(get_session)
+):
     prz_kod = extract_prz_kod(payload.usos_link)
 
     existing = session.exec(select(Przedmiot).where(Przedmiot.kod == prz_kod)).first()
@@ -332,11 +358,17 @@ async def add_przedmiot(payload: PrzedmiotCreate, session: Session = Depends(get
         srednia_trudnosc=0.0,
     )
 
-@app.post("/przedmioty/{id}/opinie", response_model=OpiniaSubmitResponse, status_code=status.HTTP_202_ACCEPTED)
+@app.post(
+    "/przedmioty/{id}/opinie",
+    response_model=OpiniaSubmitResponse,
+    status_code=status.HTTP_202_ACCEPTED,
+    summary="Dodawanie nowej opinii studenta",
+    description="Przesyła nową ocenę i opinię studenta do asynchronicznej moderacji LLM. Zwraca unikalny, poufny identyfikator_autora do śledzenia statusu."
+)
 def submit_opinia(
-    id: str,
     payload: OpiniaCreate,
     background_tasks: BackgroundTasks,
+    id: str = Path(..., description="Identyfikator przedmiotu (kod przedmiotu z USOS, np. '1120-MA001-ISP-0524')"),
     session: Session = Depends(get_session)
 ):
     przedmiot = session.get(Przedmiot, id)
@@ -368,8 +400,16 @@ def submit_opinia(
         status="oczekuje",
     )
 
-@app.get("/opinie/{identyfikator_autora}", response_model=OpiniaAuthorResponse)
-def get_opinia_status(identyfikator_autora: str, session: Session = Depends(get_session)):
+@app.get(
+    "/opinie/{identyfikator_autora}",
+    response_model=OpiniaAuthorResponse,
+    summary="Sprawdzenie statusu moderacji opinii",
+    description="Zwraca szczegółowy status moderacji opinii studenta (oczekuje, opublikowana, zmieniona_i_opublikowana lub odrzucona) na podstawie poufnego tokenu autora."
+)
+def get_opinia_status(
+    identyfikator_autora: str = Path(..., description="Poufny, unikalny token autora opinii wygenerowany podczas dodawania opinii (zwrócony w polu 'identyfikator_autora'). Służy do śledzenia postępów moderacji."),
+    session: Session = Depends(get_session)
+):
     opinia = session.exec(
         select(Opinia).where(Opinia.identyfikator_autora == identyfikator_autora)
     ).first()

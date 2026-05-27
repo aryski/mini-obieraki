@@ -65,7 +65,9 @@ class PrzedmiotDetailsResponse(SQLModel):
     srednia: float
     liczba_opinii: int
     srednia_trudnosc: float
-    rozklad_ocen: Dict[str, int]
+    rozklad_ocen: Dict[str, int] = Field(
+        schema_extra={"example": {"1": 0, "2": 1, "3": 4, "4": 15, "5": 7}}
+    )
     opinie: List[OpiniaPublicResponse]
 
 class OpiniaSubmitResponse(SQLModel):
