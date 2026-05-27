@@ -180,7 +180,7 @@ async def add_przedmiot(
     response_model=OpiniaSubmitResponse,
     status_code=status.HTTP_202_ACCEPTED,
     summary="Dodawanie nowej opinii studenta",
-    description="Przesyła nową ocenę i opinię studenta do asynchronicznej moderacji LLM. Zwraca unikalny, poufny identyfikator_autora do śledzenia statusu."
+    description="Przesyła nową ocenę i opinię studenta do asynchronicznej moderacji LLM. Zwraca unikalny, poufny token_opinii do śledzenia statusu."
 )
 def submit_opinia(
     payload: OpiniaCreate,
@@ -193,11 +193,11 @@ def submit_opinia(
         raise HTTPException(status_code=404, detail="Przedmiot o tym identyfikatorze nie istnieje.")
 
     opinia_id = f"opn_{int(datetime.now().timestamp())}_{uuid.uuid4().hex[:6]}"
-    identyfikator_autora = f"auth_{uuid.uuid4().hex}"
+    token_opinii = f"auth_{uuid.uuid4().hex}"
 
     nowa_opinia = Opinia(
         id=opinia_id,
-        identyfikator_autora=identyfikator_autora,
+        token_opinii=token_opinii,
         przedmiot_id=id,
         ocena=payload.ocena,
         trudnosc=payload.trudnosc,
@@ -213,6 +213,6 @@ def submit_opinia(
 
     return OpiniaSubmitResponse(
         id=opinia_id,
-        identyfikator_autora=identyfikator_autora,
+        token_opinii=token_opinii,
         status="oczekuje",
     )

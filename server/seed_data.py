@@ -52,7 +52,7 @@ def get_seed_opinie():
     return [
         Opinia(
             id="o1",
-            identyfikator_autora="auth_mock1",
+            token_opinii="auth_mock1",
             przedmiot_id="1",
             ocena=5,
             trudnosc=2,
@@ -63,7 +63,7 @@ def get_seed_opinie():
         ),
         Opinia(
             id="o2",
-            identyfikator_autora="auth_mock2",
+            token_opinii="auth_mock2",
             przedmiot_id="1",
             ocena=4,
             trudnosc=3,
@@ -74,7 +74,7 @@ def get_seed_opinie():
         ),
         Opinia(
             id="o3",
-            identyfikator_autora="auth_mock3",
+            token_opinii="auth_mock3",
             przedmiot_id="1",
             ocena=4,
             trudnosc=2,
@@ -85,7 +85,7 @@ def get_seed_opinie():
         ),
         Opinia(
             id="o4",
-            identyfikator_autora="auth_mock4",
+            token_opinii="auth_mock4",
             przedmiot_id="2",
             ocena=5,
             trudnosc=2,
@@ -96,7 +96,7 @@ def get_seed_opinie():
         ),
         Opinia(
             id="o5",
-            identyfikator_autora="auth_mock5",
+            token_opinii="auth_mock5",
             przedmiot_id="2",
             ocena=5,
             trudnosc=2,
@@ -107,7 +107,7 @@ def get_seed_opinie():
         ),
         Opinia(
             id="o6",
-            identyfikator_autora="auth_mock6",
+            token_opinii="auth_mock6",
             przedmiot_id="2",
             ocena=4,
             trudnosc=3,
@@ -118,7 +118,7 @@ def get_seed_opinie():
         ),
         Opinia(
             id="o7",
-            identyfikator_autora="auth_mock7",
+            token_opinii="auth_mock7",
             przedmiot_id="3",
             ocena=5,
             trudnosc=3,
@@ -129,7 +129,7 @@ def get_seed_opinie():
         ),
         Opinia(
             id="o8",
-            identyfikator_autora="auth_mock8",
+            token_opinii="auth_mock8",
             przedmiot_id="3",
             ocena=4,
             trudnosc=2,
@@ -140,7 +140,7 @@ def get_seed_opinie():
         ),
         Opinia(
             id="o9",
-            identyfikator_autora="auth_mock9",
+            token_opinii="auth_mock9",
             przedmiot_id="4",
             ocena=3,
             trudnosc=2,
@@ -151,7 +151,7 @@ def get_seed_opinie():
         ),
         Opinia(
             id="o10",
-            identyfikator_autora="auth_mock10",
+            token_opinii="auth_mock10",
             przedmiot_id="4",
             ocena=4,
             trudnosc=2,
@@ -162,7 +162,7 @@ def get_seed_opinie():
         ),
         Opinia(
             id="o11",
-            identyfikator_autora="auth_mock11",
+            token_opinii="auth_mock11",
             przedmiot_id="5",
             ocena=5,
             trudnosc=3,
@@ -173,7 +173,7 @@ def get_seed_opinie():
         ),
         Opinia(
             id="o12",
-            identyfikator_autora="auth_mock12",
+            token_opinii="auth_mock12",
             przedmiot_id="5",
             ocena=3,
             trudnosc=2,
@@ -184,7 +184,7 @@ def get_seed_opinie():
         ),
         Opinia(
             id="o13",
-            identyfikator_autora="auth_mock13",
+            token_opinii="auth_mock13",
             przedmiot_id="6",
             ocena=3,
             trudnosc=3,
