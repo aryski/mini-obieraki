@@ -43,9 +43,10 @@ zerops:
         - app/build/web/~
     run:
       # SPA fallback — Flutter web + go_router use URL paths, so deep links and refreshes
-      # must fall back to index.html instead of returning 404.
+      # must fall back to index.html. No `status`: with relative from/to Zerops does an
+      # internal/masked redirect (serves index.html content) while real files are served
+      # first. Setting status: 200 made nginx return the literal string "/index.html".
       routing:
         redirects:
           - from: /*
             to: /index.html
-            status: 200
