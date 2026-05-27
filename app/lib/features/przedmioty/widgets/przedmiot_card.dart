@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:mini_obieraki/core/theme/app_theme.dart';
 import 'package:mini_obieraki/data/models/przedmiot.dart';
 import 'package:mini_obieraki/shared/widgets/star_display.dart';
+import 'package:mini_obieraki/shared/widgets/trudnosc_chip.dart';
 
 class PrzedmiotCard extends StatefulWidget {
   final Przedmiot przedmiot;
@@ -81,10 +82,10 @@ class _PrzedmiotCardState extends State<PrzedmiotCard> {
                               ),
                             ),
                           ),
-                          if (p.semestr != null) ...[
+                          if (p.ectsLabel != null) ...[
                             const Gap(8),
                             Text(
-                              'Sem. ${p.semestr}',
+                              '${p.ectsLabel} ECTS',
                               style: theme.textTheme.labelSmall?.copyWith(
                                 color: theme.colorScheme.onSurfaceVariant,
                               ),
@@ -108,6 +109,10 @@ class _PrzedmiotCardState extends State<PrzedmiotCard> {
                             color: theme.colorScheme.onSurfaceVariant,
                           ),
                         ),
+                      ],
+                      if (p.poziomTrudnosci != null) ...[
+                        const Gap(8),
+                        TrudnoscChip(poziom: p.poziomTrudnosci!, compact: true),
                       ],
                     ],
                   ),

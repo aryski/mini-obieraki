@@ -9,6 +9,7 @@ import 'package:mini_obieraki/features/opinie/cubit/status_opinii_state.dart';
 import 'package:mini_obieraki/shared/widgets/content_wrapper.dart';
 import 'package:mini_obieraki/shared/widgets/error_view.dart';
 import 'package:mini_obieraki/shared/widgets/star_display.dart';
+import 'package:mini_obieraki/shared/widgets/trudnosc_chip.dart';
 
 class StatusOpiniiPage extends StatelessWidget {
   final String identifier;
@@ -83,6 +84,8 @@ class StatusOpiniiPage extends StatelessWidget {
                         size: 18,
                         showNumber: true,
                       ),
+                      const Gap(8),
+                      TrudnoscChip(poziom: opinia.trudnosc),
                     ],
                   ),
                   const Gap(8),

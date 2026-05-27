@@ -9,10 +9,9 @@ class PrzedmiotyRepository {
       nazwa: 'Analiza Funkcjonalna',
       kod: '1120-MA001-ISP-0524',
       prowadzacy: 'dr hab. Marek Kowalski',
-      semestr: 5,
-      opis:
-          'Przestrzenie metryczne i unormowane, operatory liniowe, twierdzenie Hahna-Banacha, przestrzenie Hilberta, spektrum operatora.',
+      ects: 4,
       srednia: 4.2,
+      sredniaTrudnosc: 2.7,
       liczbaOpinii: 18,
     ),
     const Przedmiot(
@@ -20,10 +19,9 @@ class PrzedmiotyRepository {
       nazwa: 'Uczenie Maszynowe',
       kod: '1120-IN002-ISP-0524',
       prowadzacy: 'prof. dr hab. Anna Nowak',
-      semestr: 6,
-      opis:
-          'Regresja i klasyfikacja, sieci neuronowe, metody ensemble, walidacja modeli, przetwarzanie danych, projekt końcowy.',
+      ects: 6,
       srednia: 4.7,
+      sredniaTrudnosc: 2.3,
       liczbaOpinii: 34,
     ),
     const Przedmiot(
@@ -31,10 +29,9 @@ class PrzedmiotyRepository {
       nazwa: 'Kryptografia',
       kod: '1120-IN003-ISP-0524',
       prowadzacy: 'dr Tomasz Wiśniewski',
-      semestr: 5,
-      opis:
-          'Szyfry symetryczne i asymetryczne, AES, RSA, podpisy cyfrowe, protokoły kryptograficzne, zastosowania w bezpieczeństwie.',
+      ects: 5,
       srednia: 4.5,
+      sredniaTrudnosc: 2.5,
       liczbaOpinii: 22,
     ),
     const Przedmiot(
@@ -42,10 +39,9 @@ class PrzedmiotyRepository {
       nazwa: 'Teoria Gier',
       kod: '1120-MA004-ISP-0524',
       prowadzacy: 'dr Piotr Zając',
-      semestr: 6,
-      opis:
-          'Równowaga Nasha, gry kooperatywne i niekooperatywne, aukcje, mechanizmy zachęt, zastosowania w ekonomii i CS.',
+      ects: 4,
       srednia: 3.8,
+      sredniaTrudnosc: 1.5,
       liczbaOpinii: 11,
     ),
     const Przedmiot(
@@ -53,10 +49,9 @@ class PrzedmiotyRepository {
       nazwa: 'Programowanie Funkcyjne',
       kod: '1120-IN005-ISP-0524',
       prowadzacy: 'dr Karolina Maj',
-      semestr: 4,
-      opis:
-          'Haskell, lambda rachunek, typy algebraiczne, monady, laziness, programowanie w stylu funkcyjnym w praktyce.',
+      ects: 5,
       srednia: 4.1,
+      sredniaTrudnosc: 3.0,
       liczbaOpinii: 27,
     ),
     const Przedmiot(
@@ -64,10 +59,9 @@ class PrzedmiotyRepository {
       nazwa: 'Topologia',
       kod: '1120-MA006-ISP-0524',
       prowadzacy: 'prof. dr hab. Jan Lis',
-      semestr: 5,
-      opis:
-          'Przestrzenie topologiczne, ciągłość, zwartość, spójność, twierdzenia Tichonowa i Urysohna.',
+      ects: 6,
       srednia: 3.4,
+      sredniaTrudnosc: 3.0,
       liczbaOpinii: 8,
     ),
   ];
@@ -80,6 +74,7 @@ class PrzedmiotyRepository {
         Opinia(
           id: 'o1',
           ocena: 5,
+          trudnosc: PoziomTrudnosci.trudny,
           tresc:
               'Świetny wykład, doktor tłumaczy bardzo przystępnie. Materiał trudny, ale dobrze prowadzony.',
           status: StatusOpinii.opublikowana,
@@ -88,6 +83,7 @@ class PrzedmiotyRepository {
         Opinia(
           id: 'o2',
           ocena: 4,
+          trudnosc: PoziomTrudnosci.trudny,
           tresc:
               'Dobre ćwiczenia, choć zaliczenie jest wymagające. Warto chodzić na wszystkie zajęcia.',
           status: StatusOpinii.opublikowana,
@@ -96,6 +92,7 @@ class PrzedmiotyRepository {
         Opinia(
           id: 'o3',
           ocena: 4,
+          trudnosc: PoziomTrudnosci.sredni,
           tresc:
               'Interesujący przedmiot, ale sporo materiału do samodzielnego opanowania.',
           status: StatusOpinii.zmienionaIOpublikowana,
@@ -111,6 +108,7 @@ class PrzedmiotyRepository {
         Opinia(
           id: 'o4',
           ocena: 5,
+          trudnosc: PoziomTrudnosci.sredni,
           tresc:
               'Najlepszy przedmiot na kierunku. Pani profesor jest niesamowita, projekt końcowy naprawdę uczy.',
           status: StatusOpinii.opublikowana,
@@ -119,6 +117,7 @@ class PrzedmiotyRepository {
         Opinia(
           id: 'o5',
           ocena: 5,
+          trudnosc: PoziomTrudnosci.sredni,
           tresc:
               'Bardzo praktyczny kurs. Po tym przedmiocie można spokojnie aplikować na staże z ML.',
           status: StatusOpinii.opublikowana,
@@ -127,6 +126,7 @@ class PrzedmiotyRepository {
         Opinia(
           id: 'o6',
           ocena: 4,
+          trudnosc: PoziomTrudnosci.trudny,
           tresc:
               'Dobry balans teorii i praktyki. Praca domowa czasochłonna, ale wartościowa.',
           status: StatusOpinii.opublikowana,
@@ -141,6 +141,7 @@ class PrzedmiotyRepository {
         Opinia(
           id: 'o7',
           ocena: 5,
+          trudnosc: PoziomTrudnosci.trudny,
           tresc:
               'Fascynujący przedmiot. Dr Wiśniewski ma pasję do kryptografii, która się udziela.',
           status: StatusOpinii.opublikowana,
@@ -149,6 +150,7 @@ class PrzedmiotyRepository {
         Opinia(
           id: 'o8',
           ocena: 4,
+          trudnosc: PoziomTrudnosci.sredni,
           tresc:
               'Matematyka jest wymagająca, ale dobrze wytłumaczona. Zadania laboratoryjne ciekawe.',
           status: StatusOpinii.opublikowana,
@@ -163,6 +165,7 @@ class PrzedmiotyRepository {
         Opinia(
           id: 'o9',
           ocena: 3,
+          trudnosc: PoziomTrudnosci.sredni,
           tresc:
               'Ciekawy temat, ale prowadzenie mogłoby być lepsze. Zaliczenie trochę chaotyczne.',
           status: StatusOpinii.opublikowana,
@@ -171,6 +174,7 @@ class PrzedmiotyRepository {
         Opinia(
           id: 'o10',
           ocena: 4,
+          trudnosc: PoziomTrudnosci.latwy,
           tresc:
               'Unikalne spojrzenie na matematykę stosowaną. Warto wybrać jeśli interesuje Cię ekonomia.',
           status: StatusOpinii.opublikowana,
@@ -185,6 +189,7 @@ class PrzedmiotyRepository {
         Opinia(
           id: 'o11',
           ocena: 5,
+          trudnosc: PoziomTrudnosci.trudny,
           tresc:
               'Haskell zmienił sposób w jaki myślę o programowaniu. Pani dr Maj tłumaczy monadę naprawdę klarownie.',
           status: StatusOpinii.opublikowana,
@@ -193,6 +198,7 @@ class PrzedmiotyRepository {
         Opinia(
           id: 'o12',
           ocena: 3,
+          trudnosc: PoziomTrudnosci.trudny,
           tresc:
               'Interesujące, ale krzywa uczenia się bardzo stroma. Dla osób bez doświadczenia trudny start.',
           status: StatusOpinii.opublikowana,
@@ -207,6 +213,7 @@ class PrzedmiotyRepository {
         Opinia(
           id: 'o13',
           ocena: 3,
+          trudnosc: PoziomTrudnosci.trudny,
           tresc:
               'Bardzo abstrakcyjny materiał. Wymaga dużej dojrzałości matematycznej.',
           status: StatusOpinii.opublikowana,
@@ -230,7 +237,9 @@ class PrzedmiotyRepository {
 
   Future<Przedmiot> addPrzedmiot(String usosLink) async {
     await Future.delayed(const Duration(seconds: 2));
-    // Simulate scraping by extracting prz_kod from URL
+    // Z wklejonego linku wyciągamy prz_kod i (docelowo) odpytujemy USOS API:
+    // GET {usosApiBaseUrl}/services/courses/course?course_id=<prz_kod>&fields=...
+    // Nie scrapujemy HTML - link to tylko wygodny nośnik kodu przedmiotu.
     final uri = Uri.tryParse(usosLink);
     final kod = uri?.queryParameters['prz_kod'] ?? 'UNKNOWN';
     final newPrzedmiot = Przedmiot(
@@ -238,8 +247,7 @@ class PrzedmiotyRepository {
       nazwa: 'Nowy przedmiot ($kod)',
       kod: kod,
       prowadzacy: null,
-      semestr: null,
-      opis: null,
+      ects: null,
       srednia: 0,
       liczbaOpinii: 0,
     );
@@ -250,10 +258,5 @@ class PrzedmiotyRepository {
       opinie: [],
     );
     return newPrzedmiot;
-  }
-
-  Future<void> reportUpdate(String id, String newUsosLink) async {
-    await Future.delayed(const Duration(milliseconds: 600));
-    // In production: POST /przedmioty/:id/aktualizacja
   }
 }

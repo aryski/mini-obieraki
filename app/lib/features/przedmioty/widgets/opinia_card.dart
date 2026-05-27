@@ -3,6 +3,7 @@ import 'package:gap/gap.dart';
 import 'package:mini_obieraki/core/theme/app_theme.dart';
 import 'package:mini_obieraki/data/models/opinia.dart';
 import 'package:mini_obieraki/shared/widgets/star_display.dart';
+import 'package:mini_obieraki/shared/widgets/trudnosc_chip.dart';
 
 class OpiniaCard extends StatelessWidget {
   final Opinia opinia;
@@ -28,6 +29,8 @@ class OpiniaCard extends StatelessWidget {
           Row(
             children: [
               StarDisplay(rating: opinia.ocena.toDouble(), size: 16),
+              const Gap(8),
+              TrudnoscChip(poziom: opinia.trudnosc),
               const Spacer(),
               if (opinia.zmoderowanaAutomatycznie)
                 _AutoModerationBadge(),

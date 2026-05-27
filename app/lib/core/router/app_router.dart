@@ -3,8 +3,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mini_obieraki/data/repositories/opinie_repository.dart';
 import 'package:mini_obieraki/data/repositories/przedmioty_repository.dart';
-import 'package:mini_obieraki/features/aktualizacja/cubit/aktualizacja_cubit.dart';
-import 'package:mini_obieraki/features/aktualizacja/pages/aktualizacja_page.dart';
 import 'package:mini_obieraki/features/dodaj_przedmiot/cubit/dodaj_przedmiot_cubit.dart';
 import 'package:mini_obieraki/features/dodaj_przedmiot/pages/dodaj_przedmiot_page.dart';
 import 'package:mini_obieraki/features/opinie/cubit/dodaj_opinie_cubit.dart';
@@ -76,22 +74,6 @@ class AppRouter {
                           id,
                         ),
                         child: DodajOpiniePage(przedmiotId: id),
-                      ),
-                    );
-                  },
-                ),
-                GoRoute(
-                  path: 'aktualizacja',
-                  pageBuilder: (context, state) {
-                    final id = state.pathParameters['id']!;
-                    return _slide(
-                      state,
-                      BlocProvider(
-                        create: (ctx) => AktualizacjaCubit(
-                          ctx.read<PrzedmiotyRepository>(),
-                          id,
-                        ),
-                        child: AktualizacjaPage(przedmiotId: id),
                       ),
                     );
                   },
