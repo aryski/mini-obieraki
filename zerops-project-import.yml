@@ -3,9 +3,9 @@
 # Environment isolation is at the project level (separate private network and secrets),
 # so the service names are identical in both.
 services:
-  # PostgreSQL — created upfront as infra. The backend will start using it only after the
-  # server/database.py fix (for now the code writes to SQLite). `:single` is enough to
-  # start; on prod it can later be bumped to `postgresql:ha@16`.
+  # PostgreSQL — backing store for the API (server/database.py reads DATABASE_URL injected
+  # from this service). `:single` is enough to start; on prod it can later be bumped to
+  # `postgresql:ha@16`.
   - hostname: db
     type: postgresql:single@16
 

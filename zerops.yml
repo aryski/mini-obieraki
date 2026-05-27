@@ -25,9 +25,8 @@ zerops:
       envVariables:
         # Where the deps were installed (Zerops deploys the app to /var/www).
         PYTHONPATH: /var/www/.deps
-        # Injected from the `db` service in the SAME project. NOTE: the backend still
-        # writes to SQLite (server/database.py) — this variable is waiting for the
-        # database.py fix (separate PR). Confirm the ${db_*} names in the `db` service panel.
+        # Injected from the `db` service in the SAME project. server/database.py reads this
+        # (required). Confirm the ${db_*} names match what the `db` service exports in its panel.
         DATABASE_URL: postgresql+psycopg://${db_user}:${db_password}@${db_hostname}:${db_port}/${db_dbName}
       start: python3 -m uvicorn server.main:app --host 0.0.0.0 --port 8000
 
