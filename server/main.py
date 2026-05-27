@@ -10,15 +10,16 @@ from fastapi import FastAPI, BackgroundTasks, Depends, HTTPException, Query, sta
 from fastapi.middleware.cors import CORSMiddleware
 from sqlmodel import Session, select, func
 from dotenv import load_dotenv
-import google.generativeai as genai
+from google import genai
 
 # Ładowanie zmiennych środowiskowych z pliku .env
 load_dotenv()
 
-# Konfiguracja Google Gemini
+# Konfiguracja Google Gemini (nowy, ujednolicony pakiet google-genai)
+client = None
 gemini_api_key = os.environ.get("GEMINI_API_KEY")
 if gemini_api_key:
-    genai.configure(api_key=gemini_api_key)
+    client = genai.Client(api_key=gemini_api_key)
 
 from server.database import create_db_and_tables, get_session
 from server.models import (
@@ -60,7 +61,7 @@ def on_startup():
 # ==========================================
 
 def extract_prz_kod(usos_link: str) -> str:
-    """Wyciąga parametr prz_kod z linku USOS. Jeśli wejście nie jest linkiem, zwraca je bezpośrednio."""
+    """Wyciąga parametr prz_kod lub kod z linku USOS. Jeśli wejście nie jest linkiem, zwraca je bezpośrednio."""
     usos_link = usos_link.strip()
     if not usos_link.startswith("http"):
         return usos_link  # Uznaj wejście za bezpośredni kod przedmiotu
@@ -70,11 +71,13 @@ def extract_prz_kod(usos_link: str) -> str:
         params = urllib.parse.parse_qs(parsed.query)
         if "prz_kod" in params:
             return params["prz_kod"][0]
+        if "kod" in params:
+            return params["kod"][0]
     except Exception:
         pass
     raise HTTPException(
         status_code=400,
-        detail="Nieprawidłowy link USOS - nie znaleziono parametru 'prz_kod'."
+        detail="Nieprawidłowy link USOS - nie znaleziono parametru 'prz_kod' ani 'kod'."
     )
 
 
@@ -98,7 +101,7 @@ async def moderate_opinia_in_background(opinia_id: str, custom_engine = None):
             return
 
         # Próba moderacji przez Gemini
-        if gemini_api_key:
+        if client:
             try:
                 # Definiujemy prompt zmuszający Gemini do zwrócenia poprawnego JSON-a
                 prompt = f"""
@@ -122,8 +125,10 @@ async def moderate_opinia_in_background(opinia_id: str, custom_engine = None):
                 }}
                 """
 
-                model = genai.GenerativeModel('gemini-2.5-flash')
-                response = model.generate_content(prompt)
+                response = client.models.generate_content(
+                    model='gemini-3.5-flash',
+                    contents=prompt,
+                )
                 
                 # Czyścimy formatowanie markdown jeśli model je dodał
                 json_text = response.text.strip()

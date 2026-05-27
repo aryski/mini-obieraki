@@ -33,7 +33,7 @@ class TestObierakiBackend(unittest.TestCase):
         
         # Wyłączamy prawdziwe Gemini na czas testów automatycznych, aby były szybkie i w pełni lokalne
         import server.main
-        server.main.gemini_api_key = None
+        server.main.client = None
 
     def setUp(self):
         # Tworzymy tabele w bazie przed każdym testem
