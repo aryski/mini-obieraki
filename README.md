@@ -11,20 +11,21 @@ jako pierwszy — frontend domyślnie woła `http://localhost:8000`.
 
 ### Backend (FastAPI + PostgreSQL)
 
-Wymagane: Python 3.12+ oraz działający PostgreSQL. Backend czyta połączenie ze zmiennej
-`DATABASE_URL` (wymagana — nie ma fallbacku do plikowej bazy).
+Wymagane: Python 3.12+ oraz Docker. Backend czyta połączenie ze zmiennej `DATABASE_URL`
+(wymagana — nie ma fallbacku do plikowej bazy).
 
 ```bash
-# 1. PostgreSQL (przykładowo przez Homebrew; alternatywnie Docker)
-brew services start postgresql@17
-createdb obieraki
+# 1. PostgreSQL w Dockerze
+docker run -d --name obieraki-pg \
+  -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=obieraki \
+  -p 5432:5432 postgres:16
 
 # 2. Zależności w wirtualnym środowisku
 python3 -m venv .venv
 .venv/bin/pip install -r server/requirements.txt
 
 # 3. Konfiguracja — plik .env w katalogu repo (ładowany przez load_dotenv())
-echo 'DATABASE_URL=postgresql+psycopg://'"$USER"'@localhost:5432/obieraki' > .env
+echo 'DATABASE_URL=postgresql+psycopg://postgres:postgres@localhost:5432/obieraki' > .env
 # Opcjonalnie moderacja LLM; bez tego klucza opinie zostają w statusie "oczekuje":
 # echo 'GEMINI_API_KEY=twoj_klucz' >> .env
 
