@@ -11,8 +11,8 @@ jako pierwszy — frontend domyślnie woła `http://localhost:8000`.
 
 ### Backend (FastAPI + PostgreSQL)
 
-Wymagane: Python 3.12+ oraz Docker. Backend czyta połączenie ze zmiennej `DATABASE_URL`
-(wymagana — nie ma fallbacku do plikowej bazy).
+Wymagane: Python 3.12+ oraz Docker. Backend wymaga dwóch zmiennych (bez nich nie wstanie):
+`DATABASE_URL` (połączenie z Postgresem, brak fallbacku) oraz `GEMINI_API_KEY` (moderacja LLM).
 
 ```bash
 # 1. PostgreSQL w Dockerze
@@ -26,8 +26,8 @@ python3 -m venv .venv
 
 # 3. Konfiguracja — plik .env w katalogu repo (ładowany przez load_dotenv())
 echo 'DATABASE_URL=postgresql+psycopg://postgres:postgres@localhost:5432/obieraki' > .env
-# Opcjonalnie moderacja LLM; bez tego klucza opinie zostają w statusie "oczekuje":
-# echo 'GEMINI_API_KEY=twoj_klucz' >> .env
+# GEMINI_API_KEY jest wymagany (moderacja opinii) — bez niego backend nie wstanie:
+echo 'GEMINI_API_KEY=twoj_klucz' >> .env
 
 # 4. Start (przy pierwszym uruchomieniu baza zaseeduje 6 przykładowych przedmiotów)
 .venv/bin/python -m uvicorn server.main:app --reload --port 8000

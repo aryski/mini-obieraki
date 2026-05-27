@@ -5,6 +5,7 @@ enum StatusOpinii {
   opublikowana,
   zmienionaIOpublikowana,
   odrzucona,
+  bladWeryfikacji,
 }
 
 extension StatusOpiniiX on StatusOpinii {
@@ -18,6 +19,8 @@ extension StatusOpiniiX on StatusOpinii {
         return 'Zmodyfikowana automatycznie';
       case StatusOpinii.odrzucona:
         return 'Odrzucona';
+      case StatusOpinii.bladWeryfikacji:
+        return 'Błąd weryfikacji';
     }
   }
 }
@@ -67,6 +70,8 @@ StatusOpinii statusOpiniiFromString(String s) {
       return StatusOpinii.zmienionaIOpublikowana;
     case 'odrzucona':
       return StatusOpinii.odrzucona;
+    case 'blad_weryfikacji':
+      return StatusOpinii.bladWeryfikacji;
     default:
       return StatusOpinii.oczekuje;
   }

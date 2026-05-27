@@ -96,7 +96,8 @@ class StatusOpiniiPage extends StatelessWidget {
                 ],
               ),
             ),
-            if (opinia.status == StatusOpinii.odrzucona &&
+            if ((opinia.status == StatusOpinii.odrzucona ||
+                    opinia.status == StatusOpinii.bladWeryfikacji) &&
                 opinia.powodOdrzucenia != null) ...[
               const Gap(16),
               _RejectionNote(reason: opinia.powodOdrzucenia!),
@@ -221,6 +222,12 @@ class _StatusCard extends StatelessWidget {
           AppTheme.errorColor,
           'Opinia odrzucona',
           'Moderator AI odrzucił opinię. Sprawdź powód poniżej.',
+        ),
+      StatusOpinii.bladWeryfikacji => (
+          Icons.error_outline_rounded,
+          AppTheme.errorColor,
+          'Nie udało się zweryfikować opinii',
+          'Automatyczna moderacja nie powiodła się. Spróbuj dodać opinię ponownie później.',
         ),
     };
   }
