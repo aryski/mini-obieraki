@@ -67,9 +67,9 @@ class TestObierakiBackend(BaseTestCase):
         self.assertEqual(response.status_code, 202)
         data = response.json()
         self.assertIn("id", data)
-        self.assertIn("identyfikator_autora", data)
+        self.assertIn("token_opinii", data)
         
-        auth_token = data["identyfikator_autora"]
+        auth_token = data["token_opinii"]
 
         status_resp = self.client.get(f"/opinie/{auth_token}")
         self.assertEqual(status_resp.status_code, 200)
@@ -88,7 +88,7 @@ class TestObierakiBackend(BaseTestCase):
         })
         self.assertEqual(response.status_code, 202)
         data = response.json()
-        auth_token = data["identyfikator_autora"]
+        auth_token = data["token_opinii"]
 
         status_resp = self.client.get(f"/opinie/{auth_token}")
         self.assertEqual(status_resp.json()["status"], "opublikowana")
@@ -102,7 +102,7 @@ class TestObierakiBackend(BaseTestCase):
         })
         self.assertEqual(response.status_code, 202)
         data = response.json()
-        auth_token = data["identyfikator_autora"]
+        auth_token = data["token_opinii"]
 
         status_resp = self.client.get(f"/opinie/{auth_token}")
         self.assertEqual(status_resp.json()["status"], "odrzucona")

@@ -17,7 +17,7 @@ class Opinia(SQLModel, table=True):
     __tablename__ = "opinie"
 
     id: str = Field(primary_key=True)
-    identyfikator_autora: str = Field(unique=True, index=True)
+    token_opinii: str = Field(unique=True, index=True)
     przedmiot_id: str = Field(foreign_key="przedmioty.id", index=True)
     ocena: int
     trudnosc: int
@@ -72,14 +72,13 @@ class PrzedmiotDetailsResponse(SQLModel):
 
 class OpiniaSubmitResponse(SQLModel):
     id: str
-    identyfikator_autora: str
+    token_opinii: str
     status: str
 
 class OpiniaAuthorResponse(SQLModel):
     id: str
     ocena: int
     trudnosc: int
-    tresc_oryginalna: str
     tresc_publiczna: Optional[str]
     status: str
     powod_odrzucenia: Optional[str]
