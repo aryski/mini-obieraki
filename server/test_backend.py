@@ -56,7 +56,7 @@ class TestObierakiBackend(BaseTestCase):
         response = self.client.post("/przedmioty", json={
             "usos_link": "1120-TEST-001"
         })
-        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.status_code, 409)
 
     def test_submit_opinia_and_check_status(self):
         response = self.client.post("/przedmioty/test_id/opinie", json={

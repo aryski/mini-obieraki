@@ -36,9 +36,12 @@ class Przedmiot extends Equatable {
         liczbaOpinii: json['liczba_opinii'] as int,
       );
 
-  /// Poziom trudności do wyświetlenia (łatwy/średni/trudny) lub `null` bez opinii.
-  PoziomTrudnosci? get poziomTrudnosci =>
-      poziomTrudnosciFromSrednia(sredniaTrudnosc);
+  /// Poziom trudności do wyświetlenia (łatwy/średni/trudny). Domyślnie „średni",
+  /// gdy przedmiot nie ma jeszcze żadnej opinii (brak danych o trudności).
+  PoziomTrudnosci? get poziomTrudnosci {
+    if (liczbaOpinii == 0) return PoziomTrudnosci.sredni;
+    return poziomTrudnosciFromSrednia(sredniaTrudnosc);
+  }
 
   /// ECTS w formacie do wyświetlenia (bez zbędnego ".0"): 4.0 -> "4", 1.5 -> "1.5".
   String? get ectsLabel => ects == null

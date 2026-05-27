@@ -1,4 +1,5 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:mini_obieraki/core/network/api_client.dart';
 import 'package:mini_obieraki/data/repositories/przedmioty_repository.dart';
 import 'package:mini_obieraki/features/dodaj_przedmiot/cubit/dodaj_przedmiot_state.dart';
 
@@ -18,9 +19,15 @@ class DodajPrzedmiotCubit extends Cubit<DodajPrzedmiotState> {
       }
       final przedmiot = await _repository.addPrzedmiot(usosLink);
       emit(DodajPrzedmiotSuccess(przedmiot));
-    } catch (e) {
-      emit(DodajPrzedmiotFailure(
-        'Błąd podczas pobierania danych z USOS. Spróbuj ponownie.',
+    } on ApiException catch (e) {
+      emit(DodajPrzedmiotFailure(switch (e.statusCode) {
+        409 => 'Ten przedmiot jest już w bazie.',
+        503 => 'Błąd podczas pobierania danych z USOS. Spróbuj ponownie.',
+        _ => e.message,
+      }));
+    } catch (_) {
+      emit(const DodajPrzedmiotFailure(
+        'Nie udało się dodać przedmiotu. Spróbuj ponownie.',
       ));
     }
   }
