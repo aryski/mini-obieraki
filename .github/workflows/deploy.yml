@@ -87,7 +87,7 @@ jobs:
 
       - name: Build
         working-directory: app
-        run: flutter build web --wasm --release --base-href / --dart-define=API_URL=${{ steps.api.outputs.url }}
+        run: flutter build web --release --base-href / --dart-define=API_URL=${{ steps.api.outputs.url }}
 
       - uses: actions/setup-node@v4
         with:
