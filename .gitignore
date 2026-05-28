@@ -8,4 +8,6 @@ __pycache__/
 
 *.db
 
+.venv/
+
 docs/test_results_raw/

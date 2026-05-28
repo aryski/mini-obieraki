@@ -94,16 +94,3 @@ Aby uruchomić scenariusze badania limitów Gemini oraz uderzeń concurrency:
 python server/perf/stress_test.py
 ```
 
----
-
-## Po co to jest?
-*   Przy zapisach na przedmioty obieralne studenci nie mają jednego miejsca z rzetelnymi opiniami.
-*   Anonimowość zwiększa szczerość, ale i hejt - dlatego zastosowano moderację LLM zamiast ręcznej.
-*   **Cel**: Szybka ocena, czy dany przedmiot warto wybrać.
-
-## Czego NIE robimy (świadomie poza zakresem)
-*   Brak kont użytkowników, logowania, profili.
-*   Brak edycji/usuwania własnej opinii (nie ma tożsamości użytkownika).
-*   Brak komentarzy pod opiniami, polubień, zgłaszania opinii przez użytkowników.
-*   Brak panelu administratora w wersji 1.
-*   Brak zgłaszania aktualizacji przedmiotu (dane są pobierane z USOS API tylko podczas pierwszego dodawania).

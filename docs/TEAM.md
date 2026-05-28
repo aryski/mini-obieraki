@@ -29,5 +29,3 @@
 ## Współpraca i decyzje wspólne
 
 * Wspólne opracowanie kontraktu API, schematów danych i statusów opinii.
-* Decyzja o oparciu autoryzacji na bezpiecznych tokenach opinii zamiast kont użytkowników (pełna anonimowość).
-* Zrezygnowanie z kopiowania pełnych opisów przedmiotów z USOS na rzecz bezpośredniego linkowania.
