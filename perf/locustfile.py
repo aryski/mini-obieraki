@@ -20,12 +20,6 @@ SAMPLE_OPINIONS = [
     "Lorem ipsum dolor sit amet, consectetur adipiscing elit."
 ]
 
-SAMPLE_USOS_LINKS = [
-    "https://usosweb.usos.pw.edu.pl/kontroler.php?_action=katalog2/przedmioty/pokazPrzedmiot&prz_kod=1120-DS000-ISP-0512",
-    "https://usosweb.usos.pw.edu.pl/kontroler.php?_action=katalog2/przedmioty/pokazPrzedmiot&prz_kod=1120-IN000-MSP-0566",
-    "https://usosweb.usos.pw.edu.pl/kontroler.php?_action=katalog2/przedmioty/pokazPrzedmiot&prz_kod=1120-MA000-LSP-0648"
-]
-
 class StudentUser(HttpUser):
     # Każdy wirtualny użytkownik czeka od 1 do 3 sekund przed kolejnym krokiem
     wait_time = between(1, 3)
@@ -50,8 +44,13 @@ class StudentUser(HttpUser):
 
     @task(6)
     def view_courses_list(self):
-        """Symuluje wejście na stronę główną i przeglądanie przedmiotów."""
-        self.client.get("/przedmioty", name="/przedmioty")
+        """Symuluje wejście na stronę główną i przeglądanie / wyszukiwanie przedmiotów."""
+        # W 30% przypadków użytkownik dodatkowo wyszukuje frazę
+        if random.random() < 0.3:
+            search_query = random.choice(["Analiza", "Uczenie", "Krypto", "Teoria", "Programowanie", "Topologia", "Nieistnieje"])
+            self.client.get(f"/przedmioty?search={search_query}", name="/przedmioty?search={query}")
+        else:
+            self.client.get("/przedmioty", name="/przedmioty")
 
     @task(3)
     def view_course_details(self):
@@ -79,24 +78,3 @@ class StudentUser(HttpUser):
             json=payload,
             name="/przedmioty/{id}/opinie"
         )
-
-    @task(1)
-    def add_course(self):
-        """Symuluje dodanie nowego przedmiotu przez link USOS (test integracji z USOS API oraz konfliktów HTTP 409)."""
-        usos_link = random.choice(SAMPLE_USOS_LINKS)
-        payload = {"usos_link": usos_link}
-        
-        with self.client.post("/przedmioty", json=payload, catch_response=True, name="/przedmioty") as response:
-            if response.status_code == 201:
-                response.success()
-                try:
-                    data = response.json()
-                    if "id" in data and data["id"] not in self.course_ids:
-                        self.course_ids.append(data["id"])
-                        print(f"Locust: Pomyślnie dodano nowy przedmiot {data['id']} i dodano go do puli testowej.")
-                except Exception:
-                    pass
-            elif response.status_code == 409:
-                response.success()
-            else:
-                response.failure(f"Błąd dodawania przedmiotu (status {response.status_code}): {response.text}")
