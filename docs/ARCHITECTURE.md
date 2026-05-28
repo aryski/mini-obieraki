@@ -223,15 +223,38 @@ graph LR
     apiProd -->|Odczyt/Zapis| dbProd
 ```
 
-### Uzasadnienie wyboru technologii
+## 5. Uzasadnienie wyboru technologii
 
-| Technologia | Uzasadnienie |
-| :--- | :--- |
-| **Flutter Web** | Jeden kod dla web i mobile (Dart), silne typowanie, spójny system widgetów. Alternatywa: React. |
-| **FastAPI** | Auto-generuje Swagger z typów Pythona, natywny `async/await` kluczowy dla BackgroundTask moderacji. Alternatywa: Django REST. |
-| **PostgreSQL** | Produkcyjna baza ACID, obsługa `ILIKE` i zapytań agregujących — SQLite nie skaluje się na wielu jednoczesnych pisarzy. |
-| **Gemini 3.5 Flash** | LLM rozumie kontekst opinii (przepisuje zamiast odrzucać), darmowy tier 5 RPM wystarczający dla projektu, dobre wyniki na polskim. |
-| **Zerops** | Odizolowane projekty dev/prod, zarządzany PostgreSQL, HTTPS bez konfiguracji DNS, integracja z `zcli` w GitHub Actions. |
-| **GitHub Actions** | Natywna integracja z repo, pipeline uruchamia testy przed deploymentem, prosta strategia `develop` → dev, `main` → prod. |
+Decyzje wynikają z trzech ograniczeń projektu: dokumentacja API w Swaggerze jako wymaganie,
+dane o realnych osobach prowadzących (więc rezydencja danych i RODO) oraz dwuosobowy zespół
+dzielący się na front i backend. Poniżej jak te ograniczenia przełożyły się na wybory.
+
+### Hosting: Zerops
+Hosting wybraliśmy jako pierwszy, bo pociągnął za sobą resztę. Zerops trzyma dane w EU, co przy
+opiniach dotyczących konkretnych wykładowców załatwia rezydencję danych i RODO bez kombinowania.
+W jednym projekcie dostajemy runtime backendu, zarządzanego Postgresa i prywatną sieć między
+nimi, więc nie składamy infrastruktury z kilku dostawców.
+
+### Baza: PostgreSQL
+Postgres wynikł wprost z Zeropsa, gdzie jest usługą zarządzaną z backupami, więc nie utrzymujemy
+bazy własnymi siłami. Zaczęliśmy od SQLite, ale SQLite był dobry na początek aczkolwiek nie pozwalał na przetrwanie danych pomiędzy restartami kontenera.
+
+### Backend: FastAPI
+Dokumentacja API w Swaggerze była wymaganiem, a FastAPI w prosty sposób generuje OpenAPI.
+
+### Frontend: Flutter
+Front pisze osoba, która ma duże doświadczenie we Flutterze, więc był to naturalny wybór technologii pozwalającej na osiągnięcie celu co do której mamy doświadczenie.
+
+### Źródła danych: USOS API i Gemini
+USOS API jest źródłem prawdy o przedmiotach (nazwa, ECTS), pobieranym po `prz_kod`. Świadomie
+bierzemy z niego tylko dane, do których mamy prawo, a po pełny opis i sylabus linkujemy do
+USOSweb zamiast je kopiować. Gemini odpowiada za moderację: niekulturalne opinie przepisuje do
+wersji publikowalnej, zamiast je odrzucać, co odróżnia produkt od zwykłego filtra słów. Chcieliśmy najpierw scrapować USOS-a ale plik robots.txt nie pozwalał na to, na szczęście znaleźliśmy api.
+
+Konkretnie używamy **Gemini 3.5 Flash** - LLM rozumie kontekst opinii (przepisuje zamiast odrzucać), darmowy tier 5 RPM wystarczający dla projektu, dobre wyniki na polskim.
+
+### CI/CD: GitHub Actions
+Wdrożenia idą przez GitHub Actions, gdzie testy backendu są bramką przed deployem, a gałąź
+wyznacza środowisko: `develop` wdraża się na dev, `main` na prod. Wynika to z posiadanego doświadczenia w zespole co do takiej formy dostarczania kolejnych wersji na środowiska.
 
 ---
