@@ -27,19 +27,12 @@ router = APIRouter()
     "/przedmioty",
     response_model=List[PrzedmiotResponse],
     summary="Pobieranie listy przedmiotów obieralnych",
-    description="Zwraca listę wszystkich przedmiotów obieralnych zarejestrowanych w systemie, z opcjonalnym filtrowaniem po nazwie lub kodzie."
+    description="Zwraca listę wszystkich przedmiotów obieralnych zarejestrowanych w systemie."
 )
 def get_przedmioty(
-    search: Optional[str] = Query(None, description="Filtrowanie wyników po nazwie lub kodzie przedmiotu"),
     session: Session = Depends(get_session),
 ):
     query = select(Przedmiot)
-    if search:
-        query = query.where(
-            (Przedmiot.nazwa.collate("NOCASE").like(f"%{search}%"))
-            | (Przedmiot.kod.collate("NOCASE").like(f"%{search}%"))
-        )
-
     przedmioty = session.exec(query).all()
     results = []
 
