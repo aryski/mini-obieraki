@@ -1,5 +1,6 @@
 import random
-from locust import HttpUser, task, between
+from locust import HttpUser, task, between, events
+from locust.exception import StopUser
 
 SAMPLE_OPINIONS = [
     # Kulturalne i konstruktywne
@@ -27,26 +28,36 @@ SAMPLE_USOS_LINKS = [
 ]
 
 class StudentUser(HttpUser):
-    # Każdy wirtualny użytkownik czeka od 1 do 3 sekund przed kolejnym krokiem
     wait_time = between(1, 3)
     
-    course_ids = ["1", "2", "3", "4", "5", "6"]  # Domyślny fallback do seedów
+    course_ids: list = []
 
     def on_start(self):
-        """Inicjalizacja: Pobierz listę rzeczywistych przedmiotów, by testować losowo."""
+        """Inicjalizacja: Pobierz listę rzeczywistych przedmiotów (kody USOS), by testować losowo."""
         try:
             with self.client.get("/przedmioty", catch_response=True) as response:
                 if response.status_code == 200:
                     data = response.json()
                     if isinstance(data, list) and len(data) > 0:
                         self.course_ids = [item["id"] for item in data]
-                        print(f"Locust: Pomyślnie zainicjalizowano listę {len(self.course_ids)} przedmiotów do testów obciążeniowych.")
+                        print(f"Locust: Pomyślnie zainicjalizowano {len(self.course_ids)} przedmiotów: {self.course_ids}")
                     else:
-                        print("Locust: Zwrócono pustą listę przedmiotów. Korzystam z domyślnych ID.")
+                        events.request.fire(
+                            request_type="SETUP",
+                            name="/przedmioty (init)",
+                            response_time=0,
+                            response_length=0,
+                            exception=Exception("Baza pusta — brak przedmiotów do testów"),
+                        )
+                        raise StopUser()
                 else:
                     response.failure(f"Nie udało się pobrać przedmiotów podczas startu (status {response.status_code})")
+                    raise StopUser()
+        except StopUser:
+            raise
         except Exception as e:
-            print(f"Locust: Błąd podczas pobierania przedmiotów na starcie: {e}. Używam fallbackowych ID.")
+            print(f"Locust: Błąd podczas pobierania przedmiotów na starcie: {e}")
+            raise StopUser()
 
     @task(6)
     def view_courses_list(self):
