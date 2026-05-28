@@ -190,38 +190,48 @@ sequenceDiagram
 Przedstawia organizację dwóch w pełni odizolowanych środowisk chmurowych (deweloperskiego oraz produkcyjnego) zintegrowanych z gałęziami systemu Git.
 
 ```mermaid
-graph TD
+graph LR
     classDef gitBranch fill:#F05032,stroke:#E24329,color:#ffffff,stroke-width:2px;
     classDef ghActions fill:#2088FF,stroke:#1F80E0,color:#ffffff,stroke-width:2px;
-    classDef zeropsProj fill:#E2E2E2,stroke:#CCCCCC,color:#000000,stroke-width:2px;
     classDef activeServ fill:#4CAF50,stroke:#43A047,color:#ffffff,stroke-width:2px;
 
     gitDev[Branch develop]:::gitBranch
     gitProd[Branch main]:::gitBranch
+    gha["GitHub Actions<br/>deploy.yml"]:::ghActions
 
-    gha[GitHub Actions<br/>deploy.yml]:::ghActions
-
-    subgraph Zerops Cloud Platform
-        subgraph Project: mini-obieraki-dev
-            apiDev[Service: api-dev<br/>FastAPI Container]:::activeServ
-            dbDev[Service: db-dev<br/>PostgreSQL Container]:::activeServ
-            webDev[Service: web-dev<br/>Flutter Web Container]:::activeServ
-        end
-        subgraph Project: mini-obieraki-prod
-            apiProd[Service: api-prod<br/>FastAPI Container]:::activeServ
-            dbProd[Service: db-prod<br/>PostgreSQL Container]:::activeServ
-            webProd[Service: web-prod<br/>Flutter Web Container]:::activeServ
-        end
+    subgraph DEV["Zerops: mini-obieraki-dev"]
+        apiDev["api<br/>FastAPI"]:::activeServ
+        dbDev["db<br/>PostgreSQL"]:::activeServ
+        webDev["web<br/>Flutter"]:::activeServ
     end
 
-    gitDev -->|1. Commit/Merge| gha
-    gitProd -->|1. Commit/Merge| gha
+    subgraph PROD["Zerops: mini-obieraki-prod"]
+        apiProd["api<br/>FastAPI"]:::activeServ
+        dbProd["db<br/>PostgreSQL"]:::activeServ
+        webProd["web<br/>Flutter"]:::activeServ
+    end
 
-    gha -->|2. Deploy do API DEV| apiDev
-    gha -->|3. Build & Deploy do WEB DEV| webDev
-    apiDev -->|Zapis/Odczyt dev| dbDev
+    gitDev -->|Commit/Merge| gha
+    gitProd -->|Commit/Merge| gha
 
-    gha -->|2. Deploy do API PROD| apiProd
-    gha -->|3. Build & Deploy do WEB PROD| webProd
-    apiProd -->|Zapis/Odczyt prod| dbProd
+    gha -->|Deploy API| apiDev
+    gha -->|Deploy WEB| webDev
+    apiDev -->|Odczyt/Zapis| dbDev
+
+    gha -->|Deploy API| apiProd
+    gha -->|Deploy WEB| webProd
+    apiProd -->|Odczyt/Zapis| dbProd
 ```
+
+### Uzasadnienie wyboru technologii
+
+| Technologia | Uzasadnienie |
+| :--- | :--- |
+| **Flutter Web** | Jeden kod dla web i mobile (Dart), silne typowanie, spójny system widgetów. Alternatywa: React. |
+| **FastAPI** | Auto-generuje Swagger z typów Pythona, natywny `async/await` kluczowy dla BackgroundTask moderacji. Alternatywa: Django REST. |
+| **PostgreSQL** | Produkcyjna baza ACID, obsługa `ILIKE` i zapytań agregujących — SQLite nie skaluje się na wielu jednoczesnych pisarzy. |
+| **Gemini 3.5 Flash** | LLM rozumie kontekst opinii (przepisuje zamiast odrzucać), darmowy tier 5 RPM wystarczający dla projektu, dobre wyniki na polskim. |
+| **Zerops** | Odizolowane projekty dev/prod, zarządzany PostgreSQL, HTTPS bez konfiguracji DNS, integracja z `zcli` w GitHub Actions. |
+| **GitHub Actions** | Natywna integracja z repo, pipeline uruchamia testy przed deploymentem, prosta strategia `develop` → dev, `main` → prod. |
+
+---

@@ -1,5 +1,6 @@
 import random
-from locust import HttpUser, task, between
+from locust import HttpUser, task, between, events
+from locust.exception import StopUser
 
 SAMPLE_OPINIONS = [
     # Kulturalne i konstruktywne
@@ -20,27 +21,43 @@ SAMPLE_OPINIONS = [
     "Lorem ipsum dolor sit amet, consectetur adipiscing elit."
 ]
 
+SAMPLE_USOS_LINKS = [
+    "https://usosweb.usos.pw.edu.pl/kontroler.php?_action=katalog2/przedmioty/pokazPrzedmiot&prz_kod=1120-DS000-ISP-0512",
+    "https://usosweb.usos.pw.edu.pl/kontroler.php?_action=katalog2/przedmioty/pokazPrzedmiot&prz_kod=1120-IN000-MSP-0566",
+    "https://usosweb.usos.pw.edu.pl/kontroler.php?_action=katalog2/przedmioty/pokazPrzedmiot&prz_kod=1120-MA000-LSP-0648"
+]
+
 class StudentUser(HttpUser):
-    # Każdy wirtualny użytkownik czeka od 1 do 3 sekund przed kolejnym krokiem
     wait_time = between(1, 3)
     
-    course_ids = ["1", "2", "3", "4", "5", "6"]  # Domyślny fallback do seedów
+    course_ids: list = []
 
     def on_start(self):
-        """Inicjalizacja: Pobierz listę rzeczywistych przedmiotów, by testować losowo."""
+        """Inicjalizacja: Pobierz listę rzeczywistych przedmiotów (kody USOS), by testować losowo."""
         try:
             with self.client.get("/przedmioty", catch_response=True) as response:
                 if response.status_code == 200:
                     data = response.json()
                     if isinstance(data, list) and len(data) > 0:
                         self.course_ids = [item["id"] for item in data]
-                        print(f"Locust: Pomyślnie zainicjalizowano listę {len(self.course_ids)} przedmiotów do testów obciążeniowych.")
+                        print(f"Locust: Pomyślnie zainicjalizowano {len(self.course_ids)} przedmiotów: {self.course_ids}")
                     else:
-                        print("Locust: Zwrócono pustą listę przedmiotów. Korzystam z domyślnych ID.")
+                        events.request.fire(
+                            request_type="SETUP",
+                            name="/przedmioty (init)",
+                            response_time=0,
+                            response_length=0,
+                            exception=Exception("Baza pusta — brak przedmiotów do testów"),
+                        )
+                        raise StopUser()
                 else:
                     response.failure(f"Nie udało się pobrać przedmiotów podczas startu (status {response.status_code})")
+                    raise StopUser()
+        except StopUser:
+            raise
         except Exception as e:
-            print(f"Locust: Błąd podczas pobierania przedmiotów na starcie: {e}. Używam fallbackowych ID.")
+            print(f"Locust: Błąd podczas pobierania przedmiotów na starcie: {e}")
+            raise StopUser()
 
     @task(6)
     def view_courses_list(self):
@@ -73,3 +90,24 @@ class StudentUser(HttpUser):
             json=payload,
             name="/przedmioty/{id}/opinie"
         )
+
+    @task(1)
+    def add_course(self):
+        """Symuluje dodanie nowego przedmiotu przez link USOS (test integracji z USOS API oraz konfliktów HTTP 409)."""
+        usos_link = random.choice(SAMPLE_USOS_LINKS)
+        payload = {"usos_link": usos_link}
+        
+        with self.client.post("/przedmioty", json=payload, catch_response=True, name="/przedmioty") as response:
+            if response.status_code == 201:
+                response.success()
+                try:
+                    data = response.json()
+                    if "id" in data and data["id"] not in self.course_ids:
+                        self.course_ids.append(data["id"])
+                        print(f"Locust: Pomyślnie dodano nowy przedmiot {data['id']} i dodano go do puli testowej.")
+                except Exception:
+                    pass
+            elif response.status_code == 409:
+                response.success()
+            else:
+                response.failure(f"Błąd dodawania przedmiotu (status {response.status_code}): {response.text}")
