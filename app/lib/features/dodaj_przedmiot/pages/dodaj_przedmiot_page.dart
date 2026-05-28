@@ -75,8 +75,9 @@ class _DodajPrzedmiotPageState extends State<DodajPrzedmiotPage> {
                         final uri = Uri.tryParse(v.trim());
                         if (uri == null ||
                             !uri.host.contains('usos') ||
-                            !uri.queryParameters.containsKey('prz_kod')) {
-                          return 'Nieprawidłowy link – musi zawierać parametr prz_kod';
+                            !(uri.queryParameters.containsKey('prz_kod') ||
+                                uri.queryParameters.containsKey('kod'))) {
+                          return 'Nieprawidłowy link – musi zawierać parametr prz_kod lub kod';
                         }
                         return null;
                       },

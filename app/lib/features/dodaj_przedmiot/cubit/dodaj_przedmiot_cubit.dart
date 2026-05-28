@@ -13,7 +13,7 @@ class DodajPrzedmiotCubit extends Cubit<DodajPrzedmiotState> {
     try {
       if (!_isValidUsosLink(usosLink)) {
         emit(const DodajPrzedmiotFailure(
-          'Nieprawidłowy link USOS. Upewnij się, że zawiera parametr prz_kod.',
+          'Nieprawidłowy link USOS. Upewnij się, że zawiera parametr prz_kod lub kod.',
         ));
         return;
       }
@@ -36,7 +36,8 @@ class DodajPrzedmiotCubit extends Cubit<DodajPrzedmiotState> {
     final uri = Uri.tryParse(link.trim());
     if (uri == null) return false;
     return uri.host.contains('usos') &&
-        uri.queryParameters.containsKey('prz_kod');
+        (uri.queryParameters.containsKey('prz_kod') ||
+            uri.queryParameters.containsKey('kod'));
   }
 
   void reset() => emit(const DodajPrzedmiotInitial());
