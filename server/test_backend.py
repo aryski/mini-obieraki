@@ -1,0 +1,140 @@
+import unittest
+from sqlmodel import Session
+from server.models import Przedmiot
+from server.test_fixtures import BaseTestCase
+
+
+class TestObierakiBackend(BaseTestCase):
+    def setUp(self):
+        super().setUp()
+        with Session(self.engine) as session:
+            p = Przedmiot(
+                id="test_id",
+                nazwa="Przedmiot Testowy",
+                kod="1120-TEST-001",
+                ects=4,
+                prowadzacy="dr Testowy"
+            )
+            session.add(p)
+            session.commit()
+
+    def test_get_przedmioty_list(self):
+        response = self.client.get("/przedmioty")
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertGreaterEqual(len(data), 1)
+        self.assertEqual(data[0]["id"], "test_id")
+        self.assertEqual(data[0]["nazwa"], "Przedmiot Testowy")
+        self.assertEqual(data[0]["srednia"], 0.0)
+
+    def test_get_przedmiot_details(self):
+        response = self.client.get("/przedmioty/test_id")
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertEqual(data["id"], "test_id")
+        self.assertEqual(data["ects"], 4)
+        self.assertEqual(len(data["opinie"]), 0)
+        self.assertEqual(data["rozklad_ocen"]["5"], 0)
+
+    def test_get_nonexistent_przedmiot(self):
+        response = self.client.get("/przedmioty/nieistnieje")
+        self.assertEqual(response.status_code, 404)
+
+    def test_add_przedmiot_by_usos_link(self):
+        response = self.client.post("/przedmioty", json={
+            "usos_link": "https://usosweb.usos.pw.edu.pl/kontroler.php?_action=katalog2/przedmioty/pokazPrzedmiot&kod=1120-IN000-ISP-0530"
+        })
+        self.assertEqual(response.status_code, 201)
+        data = response.json()
+        self.assertEqual(data["kod"], "1120-IN000-ISP-0530")
+        self.assertEqual(data["id"], "1120-IN000-ISP-0530")
+
+        get_resp = self.client.get("/przedmioty/1120-IN000-ISP-0530")
+        self.assertEqual(get_resp.status_code, 200)
+
+    def test_add_duplicate_przedmiot_fails(self):
+        response = self.client.post("/przedmioty", json={
+            "usos_link": "1120-TEST-001"
+        })
+        self.assertEqual(response.status_code, 409)
+
+    def test_submit_opinia_and_check_status(self):
+        response = self.client.post("/przedmioty/test_id/opinie", json={
+            "ocena": 5,
+            "trudnosc": 2,
+            "tresc": "Zajęcia były super merytoryczne i bardzo przydatne."
+        })
+        self.assertEqual(response.status_code, 202)
+        data = response.json()
+        self.assertIn("id", data)
+        self.assertIn("token_opinii", data)
+        
+        auth_token = data["token_opinii"]
+
+        status_resp = self.client.get(f"/opinie/{auth_token}")
+        self.assertEqual(status_resp.status_code, 200)
+        self.assertEqual(status_resp.json()["status"], "opublikowana")
+        self.assertEqual(status_resp.json()["tresc_publiczna"], "Zajęcia były super merytoryczne i bardzo przydatne.")
+
+        details_resp = self.client.get("/przedmioty/test_id")
+        self.assertEqual(len(details_resp.json()["opinie"]), 1)
+        self.assertEqual(details_resp.json()["srednia"], 5.0)
+
+    def test_submit_offensive_opinia_gets_moderated(self):
+        response = self.client.post("/przedmioty/test_id/opinie", json={
+            "ocena": 2,
+            "trudnosc": 3,
+            "tresc": "Ten przedmiot jest chujowy, a ćwiczenia wkurwiają."
+        })
+        self.assertEqual(response.status_code, 202)
+        data = response.json()
+        auth_token = data["token_opinii"]
+
+        status_resp = self.client.get(f"/opinie/{auth_token}")
+        self.assertEqual(status_resp.json()["status"], "opublikowana")
+        self.assertEqual(status_resp.json()["tresc_publiczna"], "Ten przedmiot jest chujowy, a ćwiczenia wkurwiają.")
+
+    def test_submit_spam_gets_rejected(self):
+        response = self.client.post("/przedmioty/test_id/opinie", json={
+            "ocena": 1,
+            "trudnosc": 1,
+            "tresc": "test"
+        })
+        self.assertEqual(response.status_code, 202)
+        data = response.json()
+        auth_token = data["token_opinii"]
+
+        status_resp = self.client.get(f"/opinie/{auth_token}")
+        self.assertEqual(status_resp.json()["status"], "odrzucona")
+        self.assertIsNotNone(status_resp.json()["powod_odrzucenia"])
+
+    def test_submit_opinia_moderation_failure_is_terminal(self):
+        import server.services.moderation as moderation
+
+        class _RaisingModels:
+            def generate_content(self, model, contents):
+                raise RuntimeError("Gemini niedostępne")
+
+        class _RaisingClient:
+            def __init__(self):
+                self.models = _RaisingModels()
+
+        original = moderation.client
+        moderation.client = _RaisingClient()
+        try:
+            response = self.client.post("/przedmioty/test_id/opinie", json={
+                "ocena": 4,
+                "trudnosc": 2,
+                "tresc": "Solidny przedmiot, sporo praktycznej wiedzy i dobrze prowadzony.",
+            })
+            self.assertEqual(response.status_code, 202)
+            auth_token = response.json()["token_opinii"]
+
+            status_resp = self.client.get(f"/opinie/{auth_token}")
+            self.assertEqual(status_resp.json()["status"], "blad_weryfikacji")
+            self.assertIsNotNone(status_resp.json()["powod_odrzucenia"])
+        finally:
+            moderation.client = original
+
+if __name__ == "__main__":
+    unittest.main()

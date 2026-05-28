@@ -1,0 +1,107 @@
+name: Deploy
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+
+
+jobs:
+  backend-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+
+      - name: Install dependencies
+        run: pip install -r server/requirements.txt
+
+      - name: Run tests
+        run: python -m unittest discover -s server -p 'test_*.py'
+
+  backend-deploy:
+    needs: backend-test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install zcli
+        run: npm install -g @zerops/zcli
+
+      - name: Deploy backend
+        env:
+          ZEROPS_TOKEN: ${{ secrets.ZEROPS_TOKEN }}
+        run: |
+          zcli login "$ZEROPS_TOKEN"
+          if [ "${{ github.ref_name }}" = "main" ]; then
+            zcli push --serviceId "${{ vars.ZEROPS_PROD_API_ID }}"
+          else
+            zcli push --serviceId "${{ vars.ZEROPS_DEV_API_ID }}"
+          fi
+
+  frontend-build-deploy:
+    needs: backend-deploy
+    if: ${{ (github.ref_name == 'main' && vars.ZEROPS_PROD_API_URL != '') || (github.ref_name == 'develop' && vars.ZEROPS_DEV_API_URL != '') }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.38.9'
+          channel: stable
+          cache: true
+
+      - name: Install dependencies
+        working-directory: app
+        run: flutter pub get
+
+      - name: Resolve API URL for environment
+        id: api
+        run: |
+          if [ "${{ github.ref_name }}" = "main" ]; then
+            echo "url=${{ vars.ZEROPS_PROD_API_URL }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "url=${{ vars.ZEROPS_DEV_API_URL }}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Build
+        working-directory: app
+        run: flutter build web --release --base-href / --dart-define=API_URL=${{ steps.api.outputs.url }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install zcli
+        run: npm install -g @zerops/zcli
+
+      - name: Deploy frontend
+        env:
+          ZEROPS_TOKEN: ${{ secrets.ZEROPS_TOKEN }}
+        run: |
+          zcli login "$ZEROPS_TOKEN"
+          # zcli respects .gitignore for files inside the repo, and app/build is gitignored,
+          # so the prebuilt statics never reach Zerops. Push from a copy OUTSIDE the repo
+          # (no .git ancestor → no ignore filtering), reusing the same zerops.yml. The
+          # app/build/web path is recreated so the `web` setup's deployFiles still matches.
+          DEPLOY_DIR="$RUNNER_TEMP/web-deploy"
+          rm -rf "$DEPLOY_DIR"
+          mkdir -p "$DEPLOY_DIR/app/build/web"
+          cp -a app/build/web/. "$DEPLOY_DIR/app/build/web/"
+          cp zerops.yml "$DEPLOY_DIR/zerops.yml"
+          cd "$DEPLOY_DIR"
+          if [ "${{ github.ref_name }}" = "main" ]; then
+            zcli push --serviceId "${{ vars.ZEROPS_PROD_WEB_ID }}" --noGit
+          else
+            zcli push --serviceId "${{ vars.ZEROPS_DEV_WEB_ID }}" --noGit
+          fi

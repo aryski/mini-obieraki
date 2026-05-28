@@ -1,0 +1,12 @@
+services:
+  - hostname: db
+    type: postgresql:single@16
+
+  - hostname: api
+    type: ubuntu/python@3.12
+    enableSubdomainAccess: true
+    minContainers: 1
+
+  - hostname: web
+    type: static
+    enableSubdomainAccess: true

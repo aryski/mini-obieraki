@@ -1,0 +1,31 @@
+zerops:
+  - setup: api
+    build:
+      base: ubuntu/python@3.12
+      buildCommands:
+        - pip3 install --target=.deps -r server/requirements.txt
+      deployFiles:
+        - server
+        - .deps
+      cache:
+        - .deps
+    run:
+      base: ubuntu/python@3.12
+      ports:
+        - port: 8000
+          httpSupport: true
+      envVariables:
+        PYTHONPATH: /var/www/.deps
+        DATABASE_URL: postgresql+psycopg://${db_user}:${db_password}@${db_hostname}:${db_port}/${db_dbName}
+      start: python3 -m uvicorn server.main:app --host 0.0.0.0 --port 8000
+
+  - setup: web
+    build:
+      base: ubuntu/nodejs@22
+      deployFiles:
+        - app/build/web/~
+    run:
+      routing:
+        redirects:
+          - from: /*
+            to: /index.html
