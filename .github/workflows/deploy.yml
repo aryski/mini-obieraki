@@ -6,13 +6,8 @@ on:
       - main
       - develop
 
-# develop → Zerops project mini-obieraki-dev
-# main    → Zerops project mini-obieraki-prod
-# Environments are told apart by Service ID (different in each project);
-# ZEROPS_TOKEN is an account token and works in both projects.
 
 jobs:
-  # --- Quality gate: backend tests must pass before any deploy ---
   backend-test:
     runs-on: ubuntu-latest
     steps:
@@ -29,7 +24,6 @@ jobs:
       - name: Run tests
         run: python -m unittest discover -s server -p 'test_*.py'
 
-  # --- Deploy backend to Zerops (zcli reads zerops.yml, setup `api`) ---
   backend-deploy:
     needs: backend-test
     runs-on: ubuntu-latest
@@ -54,14 +48,6 @@ jobs:
             zcli push --serviceId "${{ vars.ZEROPS_DEV_API_ID }}"
           fi
 
-  # --- Build Flutter web + deploy to Zerops (statics, setup `web`) ---
-  # Skipped until the API URL for the given environment is set. Resolves the chicken-and-egg:
-  # the `api` subdomain can only be enabled AFTER its first deploy, but the frontend needs
-  # that URL to build. So: 1. the first run deploys `api` (this job is skipped),
-  # 2. you enable the subdomain and set ZEROPS_*_API_URL, 3. the next run builds the frontend.
-  # needs backend-deploy (not just backend-test) so the two deploys run sequentially —
-  # Zerops locks a project during a deploy, so pushing api and web to the same project
-  # in parallel makes them collide and fail at the "Application is deploying" stage.
   frontend-build-deploy:
     needs: backend-deploy
     if: ${{ (github.ref_name == 'main' && vars.ZEROPS_PROD_API_URL != '') || (github.ref_name == 'develop' && vars.ZEROPS_DEV_API_URL != '') }}

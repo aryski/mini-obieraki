@@ -1,15 +1,7 @@
-# Build+run recipe for Zerops. The same setup names (= service hostnames) are used in
-# both projects: mini-obieraki-dev and mini-obieraki-prod. Environments differ by project,
-# not by name — so a single `api` and `web` setup is enough.
 zerops:
-  # --- Backend: FastAPI (uvicorn) ---
   - setup: api
     build:
       base: ubuntu/python@3.12
-      # Install deps into a target dir instead of a venv — the ubuntu/python image has a
-      # broken `ensurepip`, so `python3 -m venv` fails. We ship `.deps` and put it on
-      # PYTHONPATH at runtime. `server/` must stay a directory — the code imports the
-      # `server.*` package (e.g. `uvicorn server.main:app`, `from server.database import ...`).
       buildCommands:
         - pip3 install --target=.deps -r server/requirements.txt
       deployFiles:
@@ -23,28 +15,16 @@ zerops:
         - port: 8000
           httpSupport: true
       envVariables:
-        # Where the deps were installed (Zerops deploys the app to /var/www).
         PYTHONPATH: /var/www/.deps
-        # Injected from the `db` service in the SAME project. server/database.py reads this
-        # (required). Confirm the ${db_*} names match what the `db` service exports in its panel.
         DATABASE_URL: postgresql+psycopg://${db_user}:${db_password}@${db_hostname}:${db_port}/${db_dbName}
       start: python3 -m uvicorn server.main:app --host 0.0.0.0 --port 8000
 
-  # --- Frontend: Flutter web (statics built in GitHub Actions, only served here) ---
   - setup: web
     build:
-      # Statics arrive prebuilt from CI (Zerops has no Flutter/Dart base image), so the
-      # build compiles nothing — it just needs some build base to pass the files through.
-      # The runtime (nginx) comes from the `static` service type, so we omit run.base.
       base: ubuntu/nodejs@22
       deployFiles:
-        # `/~` = the directory contents land at the server root.
         - app/build/web/~
     run:
-      # SPA fallback — Flutter web + go_router use URL paths, so deep links and refreshes
-      # must fall back to index.html. No `status`: with relative from/to Zerops does an
-      # internal/masked redirect (serves index.html content) while real files are served
-      # first. Setting status: 200 made nginx return the literal string "/index.html".
       routing:
         redirects:
           - from: /*
