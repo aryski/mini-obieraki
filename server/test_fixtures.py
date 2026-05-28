@@ -4,11 +4,7 @@ import unittest
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-# server.database requires DATABASE_URL at import time. The tests override the engine in
-# setUpClass anyway, but importing server.main below would crash without this — give it a
-# throwaway in-memory value before that import.
 os.environ.setdefault("DATABASE_URL", "sqlite:///:memory:")
-# moderation.py also requires GEMINI_API_KEY at import; tests override the client anyway.
 os.environ.setdefault("GEMINI_API_KEY", "test-key")
 
 from fastapi.testclient import TestClient
@@ -51,9 +47,6 @@ class BaseTestCase(unittest.TestCase):
             poolclass=StaticPool,
         )
 
-        # Redirect the module-level engine to the test engine BEFORE TestClient
-        # starts the app lifespan — this ensures create_db_and_tables() and
-        # seed_database_if_empty() both use the in-memory DB, not obieraki.db.
         import server.database
         server.database.engine = cls.engine
 
